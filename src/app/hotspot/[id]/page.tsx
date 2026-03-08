@@ -11,6 +11,8 @@ import VolunteerInterestButton from '@/components/hotspot/VolunteerInterestButto
 import { hotspotStatusLabel, hotspotStatusColor, formatDate } from '@/lib/utils';
 import type { Hotspot, Cleanup } from '@/types/database';
 
+export const runtime = 'edge';
+
 export default function HotspotDetailPage() {
   const params = useParams();
   const id = params.id as string;

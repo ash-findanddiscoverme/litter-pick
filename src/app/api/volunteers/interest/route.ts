@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { HOTSPOT_VOLUNTEER_THRESHOLD } from '@/lib/constants';
 
+export const runtime = 'edge';
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();

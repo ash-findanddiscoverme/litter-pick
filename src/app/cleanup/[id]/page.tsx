@@ -14,6 +14,8 @@ import Badge from '@/components/ui/Badge';
 import { compressImage } from '@/lib/image';
 import type { Cleanup, Hotspot } from '@/types/database';
 
+export const runtime = 'edge';
+
 type Step = 'info' | 'complete' | 'submitting' | 'success';
 
 export default function CleanupPage() {

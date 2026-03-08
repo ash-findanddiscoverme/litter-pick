@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 
+export const runtime = 'edge';
+
 export async function GET() {
   try {
     const supabase = createServerSupabaseClient();
