@@ -32,9 +32,14 @@ export default function ProfilePage() {
       }
 
       fetch('/api/auth/profile')
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error('Failed to load profile');
+          return r.json();
+        })
         .then((data) => {
-          setProfile(data);
+          if (data?.user) {
+            setProfile(data);
+          }
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -89,12 +94,12 @@ export default function ProfilePage() {
           <div className="text-center">
             <div className="w-20 h-20 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3">
               <span className="text-3xl font-bold text-brand-500">
-                {profile.user.first_name.charAt(0).toUpperCase()}
+                {(profile.user.first_name || '?').charAt(0).toUpperCase()}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-loam">{profile.user.first_name}</h1>
+            <h1 className="text-2xl font-bold text-loam">{profile.user.first_name || 'Volunteer'}</h1>
             <p className="text-sm text-weathered mt-1">
-              {volunteerTypeLabels[profile.user.volunteer_type] || 'Volunteer'} · {profile.user.postcode_or_town}
+              {volunteerTypeLabels[profile.user.volunteer_type] || 'Volunteer'}{profile.user.postcode_or_town ? ` · ${profile.user.postcode_or_town}` : ''}
             </p>
           </div>
 
