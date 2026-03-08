@@ -161,7 +161,7 @@ export default function HeatMap({
         'circle-color': [
           'match',
           ['get', 'status'],
-          'cleaned', '#3A6B1E',
+          'cleaned', '#4AA853',
           'recently_improved', '#3b82f6',
           'cleanup_forming', '#C67B4E',
           '#B06A3B', // needs_attention default
@@ -198,7 +198,7 @@ export default function HeatMap({
       if (markerRef.current) {
         markerRef.current.setLngLat([lng, lat]);
       } else {
-        markerRef.current = new maplibregl.Marker({ draggable: true, color: '#3A6B1E' })
+        markerRef.current = new maplibregl.Marker({ draggable: true, color: '#4AA853' })
           .setLngLat([lng, lat])
           .addTo(mapRef.current);
 
@@ -234,7 +234,7 @@ export default function HeatMap({
     if (markerRef.current) {
       markerRef.current.setLngLat([lng, lat]);
     } else {
-      markerRef.current = new maplibregl.Marker({ draggable: true, color: '#3A6B1E' })
+      markerRef.current = new maplibregl.Marker({ draggable: true, color: '#4AA853' })
         .setLngLat([lng, lat])
         .addTo(mapRef.current);
 

@@ -11,16 +11,16 @@ const config: Config = {
       colors: {
         /* Palette A — "Hedgerow & Chalk" */
         brand: {
-          50:  '#F2F7EC',   /* Pale Meadow – tinted card bg */
-          100: '#E1ECDA',   /* Light hedgerow wash */
-          200: '#C5D6A8',   /* Soft leaf */
-          300: '#9BB88A',   /* Lichen bridge */
-          400: '#7A9B5A',   /* Mid hedgerow */
-          500: '#3A6B1E',   /* Deep Hedgerow – primary */
-          600: '#2D5016',   /* Deep Moss – darker primary */
-          700: '#1E3A0F',   /* Dark canopy */
-          800: '#142A0A',   /* Near-black green */
-          900: '#0B1C06',   /* Deepest green */
+          50:  '#EEF7EF',   /* Palest green tint */
+          100: '#D5ECD7',   /* Light green wash */
+          200: '#B0D9B4',   /* Soft green */
+          300: '#82C288',   /* Mid-light green */
+          400: '#5FB366',   /* Approach green */
+          500: '#4AA853',   /* Litter Pick Green – primary */
+          600: '#3D8B45',   /* Deep green */
+          700: '#2F6C36',   /* Dark green */
+          800: '#224E27',   /* Near-black green */
+          900: '#153319',   /* Deepest green */
         },
         accent: {
           50:  '#FDF5EC',   /* Lightest clay */
