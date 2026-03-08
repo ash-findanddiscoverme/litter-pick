@@ -138,6 +138,24 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Donate CTA */}
+        <section className="py-16 bg-stone-50">
+          <div className="max-w-6xl mx-auto px-4 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-loam">
+              Help keep this going
+            </h2>
+            <p className="text-weathered mt-3 max-w-md mx-auto">
+              Litter Pick is free to use and volunteer-run. A small donation
+              helps fund supplies, mapping tools, and community clean-ups.
+            </p>
+            <div className="mt-8">
+              <Link href="/donate">
+                <Button size="lg">Make a donation</Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* CTA */}
         <section className="py-16 bg-brand-500">
           <div className="max-w-6xl mx-auto px-4 text-center">

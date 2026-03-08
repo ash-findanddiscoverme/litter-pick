@@ -6,6 +6,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
         <span className="text-xs text-stone-300">&copy; {new Date().getFullYear()} Litter Pick</span>
         <nav className="flex items-center gap-4 text-xs text-weathered">
+          <Link href="/donate" className="hover:text-loam transition-colors">Donate</Link>
           <Link href="/about" className="hover:text-loam transition-colors">About</Link>
           <Link href="/terms" className="hover:text-loam transition-colors">Terms</Link>
           <Link href="/privacy" className="hover:text-loam transition-colors">Privacy</Link>
