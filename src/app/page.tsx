@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Button from '@/components/ui/Button';
@@ -39,12 +38,12 @@ export default function LandingPage() {
                 clean-ups near you. A simpler way to look after where you live.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mt-8">
-                <Link href="/report">
+                <a href="/report" className="block">
                   <Button size="lg" fullWidth>Report litter</Button>
-                </Link>
-                <Link href="/volunteer">
+                </a>
+                <a href="/volunteer" className="block">
                   <Button size="lg" variant="outline" fullWidth>I want to help</Button>
-                </Link>
+                </a>
               </div>
             </div>
           </div>
@@ -131,9 +130,9 @@ export default function LandingPage() {
               The heatmap shows litter density across Oxfordshire. Brighter spots mean more reports.
             </p>
             <div className="mt-8">
-              <Link href="/map">
+              <a href="/map">
                 <Button size="lg">Open the map</Button>
-              </Link>
+              </a>
             </div>
           </div>
         </section>
@@ -149,9 +148,9 @@ export default function LandingPage() {
               helps fund supplies, mapping tools, and community clean-ups.
             </p>
             <div className="mt-8">
-              <Link href="/donate">
+              <a href="/donate">
                 <Button size="lg">Make a donation</Button>
-              </Link>
+              </a>
             </div>
           </div>
         </section>
@@ -166,16 +165,16 @@ export default function LandingPage() {
               You don&apos;t have to do it alone. Spot something, log it, and let your neighbours know.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-              <Link href="/report" className="inline-block">
+              <a href="/report" className="inline-block">
                 <button className="px-6 py-3 text-base font-semibold rounded-xl bg-white text-brand-600 hover:bg-brand-50 transition-all shadow-sm w-full sm:w-auto min-w-[200px]">
                   Report litter
                 </button>
-              </Link>
-              <Link href="/volunteer" className="inline-block">
+              </a>
+              <a href="/volunteer" className="inline-block">
                 <button className="px-6 py-3 text-base font-semibold rounded-xl border-2 border-white text-white hover:bg-brand-600 transition-all w-full sm:w-auto min-w-[200px]">
                   Become a volunteer
                 </button>
-              </Link>
+              </a>
             </div>
           </div>
         </section>
