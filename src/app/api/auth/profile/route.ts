@@ -28,6 +28,7 @@ export async function GET() {
           first_name: user.user_metadata?.first_name || user.email?.split('@')[0] || 'Volunteer',
           volunteer_type: user.user_metadata?.volunteer_type || 'solo',
           postcode_or_town: user.user_metadata?.postcode_or_town || '',
+          avatar_url: user.user_metadata?.avatar_url || null,
         },
         stats: {
           cleanups_joined: 0,
@@ -55,6 +56,7 @@ export async function GET() {
           first_name: user.user_metadata?.first_name || user.email?.split('@')[0] || 'Volunteer',
           volunteer_type: user.user_metadata?.volunteer_type || 'solo',
           postcode_or_town: user.user_metadata?.postcode_or_town || '',
+          avatar_url: user.user_metadata?.avatar_url || null,
         },
         stats: {
           cleanups_joined: 0,

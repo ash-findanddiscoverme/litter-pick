@@ -43,6 +43,7 @@ export interface User {
   phone: string | null;
   postcode_or_town: string;
   volunteer_type: VolunteerType;
+  avatar_url: string | null;
   created_at: string;
 }
 
