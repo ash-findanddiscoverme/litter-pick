@@ -1,0 +1,127 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import { formatPickDate } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import type { PickWithDetails } from '@/types/database';
+
+interface PickCardProps {
+  pick: PickWithDetails;
+}
+
+export default function PickCard({ pick }: PickCardProps) {
+  const router = useRouter();
+  const [joining, setJoining] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const [volunteerCount, setVolunteerCount] = useState(pick.volunteer_count);
+  const [error, setError] = useState('');
+
+  const handleJoin = async () => {
+    setJoining(true);
+    setError('');
+
+    // Check auth first
+    const supabase = createClient();
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      router.push('/volunteer');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/picks/${pick.id}/join`, { method: 'POST' });
+      const body = await res.json();
+
+      if (res.status === 409) {
+        setJoined(true);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(body.error || 'Failed to join');
+      }
+
+      setJoined(true);
+      setVolunteerCount(body.volunteer_count);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  return (
+    <Card>
+      <div className="space-y-3">
+        {/* Organiser */}
+        <div className="flex items-center gap-2.5">
+          {pick.organiser_avatar ? (
+            <img
+              src={pick.organiser_avatar}
+              alt={pick.organiser_name}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-8 h-8 bg-brand-50 rounded-full flex items-center justify-center">
+              <span className="text-sm font-bold text-brand-500">
+                {pick.organiser_name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          <div>
+            <p className="text-sm font-medium text-loam">{pick.organiser_name}</p>
+            <p className="text-xs text-stone-400">Organiser</p>
+          </div>
+        </div>
+
+        {/* Hotspot & time */}
+        <div>
+          <h3 className="text-base font-semibold text-loam">
+            {pick.hotspot_name || 'Litter hotspot'}
+          </h3>
+          <p className="text-sm text-brand-500 font-medium mt-0.5">
+            <svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            </svg>
+            {formatPickDate(pick.proposed_time)}
+          </p>
+        </div>
+
+        {/* Notes */}
+        {pick.notes && (
+          <p className="text-sm text-weathered">{pick.notes}</p>
+        )}
+
+        {/* Footer: volunteer count + join */}
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-xs text-stone-400">
+            <svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+            {volunteerCount} {volunteerCount === 1 ? 'person' : 'people'} joining
+          </span>
+
+          {joined ? (
+            <span className="text-sm font-medium text-brand-500 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Joined
+            </span>
+          ) : (
+            <Button size="sm" onClick={handleJoin} disabled={joining}>
+              {joining ? 'Joining...' : 'Join'}
+            </Button>
+          )}
+        </div>
+
+        {error && (
+          <p className="text-xs text-red-600">{error}</p>
+        )}
+      </div>
+    </Card>
+  );
+}

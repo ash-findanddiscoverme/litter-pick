@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
@@ -18,6 +19,7 @@ interface ReportPhoto {
   submitted_at: string;
   latitude: number;
   longitude: number;
+  hotspot_id: string | null;
 }
 
 interface ProfileData {
@@ -357,26 +359,28 @@ export default function ProfilePage() {
               </div>
               <div className="grid grid-cols-3 gap-1.5 rounded-2xl overflow-hidden">
                 {profile.reports.map((report) => (
-                  <div key={report.id} className="relative aspect-square group">
-                    <img
-                      src={report.image_url}
-                      alt={`Litter report — ${report.severity}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
-                      <div className="w-full px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                          report.severity === 'bad'
-                            ? 'bg-red-500 text-white'
-                            : report.severity === 'medium'
-                            ? 'bg-amber-400 text-amber-900'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {report.severity}
-                        </span>
+                  <Link key={report.id} href={`/report/${report.id}`}>
+                    <div className="relative aspect-square group cursor-pointer">
+                      <img
+                        src={report.image_url}
+                        alt={`Litter report — ${report.severity}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
+                        <div className="w-full px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                            report.severity === 'bad'
+                              ? 'bg-red-500 text-white'
+                              : report.severity === 'medium'
+                              ? 'bg-amber-400 text-amber-900'
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {report.severity}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

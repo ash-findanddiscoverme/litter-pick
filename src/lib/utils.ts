@@ -58,6 +58,14 @@ export function severityColor(severity: string): string {
   return colors[severity] || 'bg-stone-100 text-stone-400';
 }
 
+/** Format a future date for pick display, e.g. "Saturday, 15 March at 2:00 PM" */
+export function formatPickDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const time = date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${day} at ${time}`;
+}
+
 /** Compute distance between two lat/lng pairs in km (Haversine) */
 export function haversineDistance(
   lat1: number, lng1: number,

@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -91,7 +91,7 @@ export async function GET() {
     // Fetch user's reports (most recent first, only ones with photos)
     const { data: userReports } = await serviceClient
       .from('reports')
-      .select('id, image_url, severity, submitted_at, latitude, longitude')
+      .select('id, image_url, severity, submitted_at, latitude, longitude, hotspot_id')
       .eq('user_id', user.id)
       .not('image_url', 'is', null)
       .order('submitted_at', { ascending: false })

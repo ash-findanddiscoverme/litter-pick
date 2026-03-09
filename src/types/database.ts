@@ -1,7 +1,7 @@
 // Database types matching Supabase schema
 
 export type ReportSeverity = 'low' | 'medium' | 'bad';
-export type ReportStatus = 'pending' | 'confirmed' | 'spam';
+export type ReportStatus = 'pending' | 'confirmed' | 'spam' | 'cleaned';
 export type HotspotStatus = 'needs_attention' | 'cleanup_forming' | 'recently_improved' | 'cleaned';
 export type VolunteerType = 'solo' | 'group' | 'organise';
 export type InterestType = 'help' | 'join' | 'organise';
@@ -96,6 +96,21 @@ export interface VolunteerSignupInput {
   phone?: string;
   postcode_or_town: string;
   volunteer_type: VolunteerType;
+}
+
+export interface PickWithDetails {
+  id: string;
+  hotspot_id: string;
+  hotspot_name: string | null;
+  hotspot_lat: number;
+  hotspot_lng: number;
+  organiser_id: string;
+  organiser_name: string;
+  organiser_avatar: string | null;
+  proposed_time: string;
+  volunteer_count: number;
+  notes: string | null;
+  status: CleanupStatus;
 }
 
 export interface CleanupCompletionInput {

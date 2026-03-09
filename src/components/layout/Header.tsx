@@ -38,19 +38,22 @@ export default function Header() {
           <Link href="/report" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
             Report
           </Link>
+          <Link href="/picks" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
+            Picks
+          </Link>
           {user ? (
             <Link href="/profile">
               <Button variant="secondary" size="sm">Profile</Button>
             </Link>
           ) : (
-            <>
-              <Link href="/login">
-                <Button variant="outline" size="sm">Log in</Button>
-              </Link>
+            <div className="flex items-center gap-2.5 ml-2">
               <Link href="/volunteer">
                 <Button size="sm">Volunteer</Button>
               </Link>
-            </>
+              <Link href="/login">
+                <Button variant="outline" size="sm">Log in</Button>
+              </Link>
+            </div>
           )}
         </nav>
 
@@ -79,17 +82,20 @@ export default function Header() {
           <Link href="/report" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
             Report litter
           </Link>
+          <Link href="/picks" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
+            Picks
+          </Link>
           {user ? (
             <Link href="/profile" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
               My profile
             </Link>
           ) : (
             <>
-              <Link href="/login" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
-                Log in
-              </Link>
               <Link href="/volunteer" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
                 Volunteer
+              </Link>
+              <Link href="/login" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
+                Log in
               </Link>
             </>
           )}
