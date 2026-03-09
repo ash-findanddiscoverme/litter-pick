@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, MAP_STYLE_URL } from '@/lib/constants';
 import type { Hotspot } from '@/types/database';
+
+export interface HeatMapHandle {
+  flyTo: (lng: number, lat: number, zoom?: number) => void;
+}
 
 interface HeatMapProps {
   hotspots?: Hotspot[];
@@ -17,7 +21,7 @@ interface HeatMapProps {
   className?: string;
 }
 
-export default function HeatMap({
+const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
   hotspots = [],
   pickMode = false,
   initialCenter,
@@ -25,11 +29,17 @@ export default function HeatMap({
   onLocationSelect,
   onHotspotClick,
   className = '',
-}: HeatMapProps) {
+}, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    flyTo(lng: number, lat: number, zoom = 14) {
+      mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 1500 });
+    },
+  }));
 
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
 
@@ -264,4 +274,6 @@ export default function HeatMap({
       )}
     </div>
   );
-}
+});
+
+export default HeatMap;
