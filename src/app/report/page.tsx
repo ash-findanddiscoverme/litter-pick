@@ -1,16 +1,24 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import HeatMap from '@/components/map/HeatMap';
+import type { HeatMapHandle } from '@/components/map/HeatMap';
 import PhotoCapture from '@/components/report/PhotoCapture';
 import SeverityPicker from '@/components/report/SeverityPicker';
 import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { compressImage, getCurrentPosition, extractGPSFromImage } from '@/lib/image';
+import { DEFAULT_CENTER, DEFAULT_ZOOM } from '@/lib/constants';
 import type { ReportSeverity } from '@/types/database';
+
+interface SearchResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
 
 type Step = 'photo' | 'location' | 'details' | 'submitting' | 'success';
 
@@ -25,6 +33,63 @@ export default function ReportPage() {
   const [error, setError] = useState('');
   const [locating, setLocating] = useState(false);
   const [locationSource, setLocationSource] = useState<'exif' | 'gps' | 'manual' | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HeatMapHandle>(null);
+
+  // Close search results on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLocationSearch = (query: string) => {
+    setSearchQuery(query);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    if (query.length < 3) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb&limit=5&addressdetails=1`,
+          { headers: { Accept: 'application/json' } }
+        );
+        const data: SearchResult[] = await res.json();
+        setSearchResults(data);
+        setShowResults(data.length > 0);
+      } catch {
+        setSearchResults([]);
+      }
+      setSearching(false);
+    }, 400);
+  };
+
+  const handleSelectSearchResult = (result: SearchResult) => {
+    const lng = parseFloat(result.lon);
+    const lat = parseFloat(result.lat);
+    setLongitude(lng);
+    setLatitude(lat);
+    setLocationSource('manual');
+    setSearchQuery(result.display_name.split(',')[0]);
+    setShowResults(false);
+    setSearchResults([]);
+    mapRef.current?.flyTo(lng, lat, 15);
+  };
 
   const handlePhoto = useCallback(async (file: File) => {
     const compressed = await compressImage(file);
@@ -141,7 +206,7 @@ export default function ReportPage() {
                     ? 'Getting your location...'
                     : locationSource === 'exif'
                     ? 'Location found from your photo — confirm or adjust the pin'
-                    : 'Confirm or adjust the pin on the map'}
+                    : 'Search for a place or tap the map to drop a pin'}
                 </p>
                 {locationSource === 'exif' && (
                   <span className="inline-flex items-center gap-1 mt-2 bg-brand-50 text-brand-600 rounded-full px-3 py-1 text-xs font-medium">
@@ -153,10 +218,47 @@ export default function ReportPage() {
                 )}
               </div>
 
+              {/* Location search */}
+              <div ref={searchContainerRef} className="relative">
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleLocationSearch(e.target.value)}
+                    onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                    placeholder="Search for a road, town or postcode..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-loam placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400"
+                  />
+                  {searching && (
+                    <svg className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                </div>
+                {showResults && searchResults.length > 0 && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-lg overflow-hidden">
+                    {searchResults.map((result, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSelectSearchResult(result)}
+                        className="w-full text-left px-4 py-2.5 text-sm text-loam hover:bg-brand-50 transition-colors border-b border-stone-50 last:border-0"
+                      >
+                        <span className="line-clamp-1">{result.display_name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <HeatMap
+                ref={mapRef}
                 pickMode
-                initialCenter={longitude && latitude ? [longitude, latitude] : undefined}
-                initialZoom={15}
+                initialCenter={longitude && latitude ? [longitude, latitude] : DEFAULT_CENTER}
+                initialZoom={longitude && latitude ? 15 : DEFAULT_ZOOM}
                 onLocationSelect={handleLocationSelect}
                 className="h-64"
               />
