@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Gather unique organiser and hotspot IDs
-    const organiserIds = [...new Set(picks.map((p) => p.organiser_user_id).filter(Boolean))] as string[];
-    const hotspotIds = [...new Set(picks.map((p) => p.hotspot_id))];
+    const organiserIds = Array.from(new Set(picks.map((p) => p.organiser_user_id).filter(Boolean))) as string[];
+    const hotspotIds = Array.from(new Set(picks.map((p) => p.hotspot_id)));
 
     // Fetch organisers
     const { data: organisers } = await serviceClient
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 /** POST /api/picks — create a new pick (auth required) */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createServerSupabaseClient();
     const serviceClient = createServiceRoleClient();
 
     const { data: { user } } = await supabase.auth.getUser();

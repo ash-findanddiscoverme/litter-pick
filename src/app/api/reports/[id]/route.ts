@@ -5,11 +5,11 @@ export const runtime = 'edge';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const serviceClient = createServiceRoleClient();
-    const { id } = await params;
+    const { id } = params;
 
     const { data: report, error } = await serviceClient
       .from('reports')
@@ -41,12 +41,12 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createServerSupabaseClient();
     const serviceClient = createServiceRoleClient();
-    const { id } = await params;
+    const { id } = params;
 
     // Auth check
     const { data: { user } } = await supabase.auth.getUser();

@@ -5,12 +5,12 @@ export const runtime = 'edge';
 
 export async function POST(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createServerSupabaseClient();
     const serviceClient = createServiceRoleClient();
-    const { id } = await params;
+    const { id } = params;
 
     // Auth check
     const { data: { user } } = await supabase.auth.getUser();
