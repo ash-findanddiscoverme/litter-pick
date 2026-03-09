@@ -26,3 +26,17 @@
     display: none;
   }
 }
+
+/* Pulsing glow for the Report litter button */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(74, 168, 83, 0.4), 0 4px 12px rgba(74, 168, 83, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(74, 168, 83, 0.6), 0 4px 24px rgba(74, 168, 83, 0.35);
+  }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}

@@ -66,16 +66,16 @@ export default function MapPage() {
             className="absolute inset-0"
           />
 
-          {/* Floating action buttons */}
-          <div className="absolute bottom-6 right-4 flex flex-col items-end gap-2">
-            <a href="/report">
-              <Button size="md" className="shadow-lg">
+          {/* Floating action buttons — lifted for mobile browser chrome */}
+          <div className="absolute bottom-24 sm:bottom-8 left-4 right-4 flex flex-col items-stretch gap-2 max-w-xs mx-auto">
+            <a href="/report" className="block">
+              <button className="w-full px-6 py-3 text-base font-semibold rounded-xl bg-brand-500 text-white hover:bg-brand-600 transition-all shadow-lg animate-glow">
                 Report litter
-              </Button>
+              </button>
             </a>
             <button
               onClick={() => setShowList(!showList)}
-              className="bg-white shadow-lg rounded-xl px-4 py-2.5 text-sm font-medium text-loam hover:bg-stone-50 transition-colors"
+              className="w-full bg-white shadow-lg rounded-xl px-6 py-3 text-base font-semibold text-loam hover:bg-stone-50 transition-colors"
             >
               {showList ? 'Hide list' : `${hotspots.length} hotspots`}
             </button>
