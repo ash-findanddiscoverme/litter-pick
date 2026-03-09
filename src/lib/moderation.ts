@@ -19,8 +19,7 @@ async function getModel(): Promise<nsfwjs.NSFWJS> {
       // Use the MobileNetV2 mid model for better accuracy (~93%)
       const model = await mod.load(
         'https://nsfwjs.com/quant_mid/',
-        // @ts-expect-error - model size option
-        { size: 224 }
+        { size: 224 } as Parameters<typeof mod.load>[1]
       );
       return model;
     });
