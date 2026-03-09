@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import HeatMap from '@/components/map/HeatMap';
 import { createClient } from '@/lib/supabase/client';
 import { checkImageSafety } from '@/lib/moderation';
 import type { User } from '@/types/database';
@@ -272,12 +273,14 @@ export default function ProfilePage() {
 
           {/* Volunteer area */}
           <Card>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-semibold text-loam">Volunteer area</h3>
                 {profile.user.volunteer_radius_km ? (
                   <p className="text-xs text-weathered mt-0.5">
-                    {profile.user.volunteer_radius_km} km radius
+                    {profile.user.volunteer_radius_km < 1
+                      ? `${Math.round(profile.user.volunteer_radius_km * 1000)}m`
+                      : `${profile.user.volunteer_radius_km}km`} radius
                     {profile.user.postcode_or_town ? ` from ${profile.user.postcode_or_town}` : ''}
                   </p>
                 ) : (
@@ -291,6 +294,20 @@ export default function ProfilePage() {
                 {profile.user.volunteer_radius_km ? 'Edit' : 'Set up'}
               </a>
             </div>
+            {profile.user.volunteer_lat && profile.user.volunteer_lng && profile.user.volunteer_radius_km ? (
+              <div className="relative rounded-xl overflow-hidden" style={{ height: 180 }}>
+                <HeatMap
+                  initialCenter={[profile.user.volunteer_lng, profile.user.volunteer_lat]}
+                  initialZoom={13}
+                  radiusCircle={{
+                    lng: profile.user.volunteer_lng,
+                    lat: profile.user.volunteer_lat,
+                    radiusKm: profile.user.volunteer_radius_km,
+                  }}
+                  className="absolute inset-0"
+                />
+              </div>
+            ) : null}
           </Card>
 
           {/* Quick actions */}
