@@ -9,6 +9,7 @@ import type { Hotspot } from '@/types/database';
 
 export interface HeatMapHandle {
   flyTo: (lng: number, lat: number, zoom?: number) => void;
+  fitBounds: (sw: [number, number], ne: [number, number], padding?: number) => void;
 }
 
 interface HeatMapProps {
@@ -42,6 +43,9 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
   useImperativeHandle(ref, () => ({
     flyTo(lng: number, lat: number, zoom = 14) {
       mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 1500 });
+    },
+    fitBounds(sw: [number, number], ne: [number, number], padding = 40) {
+      mapRef.current?.fitBounds([sw, ne], { padding, duration: 1200 });
     },
   }));
 

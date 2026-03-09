@@ -16,6 +16,34 @@ interface RadiusSetupProps {
   onComplete: () => void;
 }
 
+/** Slider steps in km — from 250m up to 10km */
+const SLIDER_STEPS = [
+  0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10,
+];
+
+function formatRadius(km: number): string {
+  if (km < 1) return `${Math.round(km * 1000)}m`;
+  return `${km}km`;
+}
+
+/**
+ * Calculate bounding box for a circle so fitBounds keeps the edge in view.
+ * Uses simple flat-Earth approximation (fine for <10km).
+ */
+function circleBounds(
+  lng: number,
+  lat: number,
+  radiusKm: number
+): { sw: [number, number]; ne: [number, number] } {
+  const earthRadius = 6371;
+  const latDelta = (radiusKm / earthRadius) * (180 / Math.PI);
+  const lngDelta = (radiusKm / (earthRadius * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI);
+  return {
+    sw: [lng - lngDelta, lat - latDelta],
+    ne: [lng + lngDelta, lat + latDelta],
+  };
+}
+
 export default function RadiusSetup({
   postcodeOrTown,
   existingCenter,
@@ -24,7 +52,16 @@ export default function RadiusSetup({
   onComplete,
 }: RadiusSetupProps) {
   const [center, setCenter] = useState<[number, number] | null>(existingCenter || null);
-  const [radiusKm, setRadiusKm] = useState(existingRadiusKm || 5);
+
+  // Find the closest slider step for an existing value, default to 1km
+  const initialStep = existingRadiusKm
+    ? SLIDER_STEPS.reduce((closest, step, i) =>
+        Math.abs(step - existingRadiusKm) < Math.abs(SLIDER_STEPS[closest] - existingRadiusKm) ? i : closest, 0)
+    : SLIDER_STEPS.indexOf(1); // default 1km
+
+  const [stepIndex, setStepIndex] = useState(initialStep);
+  const radiusKm = SLIDER_STEPS[stepIndex];
+
   const [geocoding, setGeocoding] = useState(!existingCenter);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -32,7 +69,7 @@ export default function RadiusSetup({
 
   // Geocode the postcode/town on mount (skip if we already have coordinates)
   useEffect(() => {
-    if (existingCenter) return; // Already have coordinates from profile
+    if (existingCenter) return;
 
     async function geocode() {
       if (!postcodeOrTown) {
@@ -61,6 +98,14 @@ export default function RadiusSetup({
     geocode();
   }, [postcodeOrTown, existingCenter]);
 
+  // Fit the map to the circle bounds whenever radius or center changes
+  useEffect(() => {
+    if (center && mapRef.current) {
+      const { sw, ne } = circleBounds(center[0], center[1], radiusKm);
+      mapRef.current.fitBounds(sw, ne, 40);
+    }
+  }, [radiusKm, center]);
+
   const handleSave = async () => {
     if (!center) return;
     setSaving(true);
@@ -88,22 +133,6 @@ export default function RadiusSetup({
       setSaving(false);
     }
   };
-
-  // Calculate appropriate zoom for the radius
-  const getZoomForRadius = (km: number): number => {
-    if (km <= 2) return 13;
-    if (km <= 5) return 12;
-    if (km <= 10) return 11;
-    if (km <= 15) return 10;
-    return 9;
-  };
-
-  // Fly to fit the radius when slider changes
-  useEffect(() => {
-    if (center && mapRef.current) {
-      mapRef.current.flyTo(center[0], center[1], getZoomForRadius(radiusKm));
-    }
-  }, [radiusKm, center]);
 
   if (geocoding) {
     return (
@@ -135,7 +164,7 @@ export default function RadiusSetup({
             <HeatMap
               ref={mapRef}
               initialCenter={center}
-              initialZoom={getZoomForRadius(radiusKm)}
+              initialZoom={14}
               radiusCircle={{ lng: center[0], lat: center[1], radiusKm }}
               className="absolute inset-0"
             />
@@ -145,20 +174,20 @@ export default function RadiusSetup({
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-loam">Distance</span>
-              <span className="text-sm font-bold text-brand-500">{radiusKm} km</span>
+              <span className="text-sm font-bold text-brand-500">{formatRadius(radiusKm)}</span>
             </div>
             <input
               type="range"
-              min={1}
-              max={25}
+              min={0}
+              max={SLIDER_STEPS.length - 1}
               step={1}
-              value={radiusKm}
-              onChange={(e) => setRadiusKm(parseInt(e.target.value))}
+              value={stepIndex}
+              onChange={(e) => setStepIndex(parseInt(e.target.value))}
               className="w-full h-2 bg-stone-100 rounded-full appearance-none cursor-pointer accent-brand-500"
             />
             <div className="flex justify-between text-xs text-stone-300 mt-1">
-              <span>1 km</span>
-              <span>25 km</span>
+              <span>250m</span>
+              <span>10km</span>
             </div>
           </div>
         </>
