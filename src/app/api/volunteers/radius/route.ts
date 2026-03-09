@@ -6,7 +6,7 @@ export const runtime = 'edge';
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
     }
 
-    if (radius_km < 0.25 || radius_km > 10) {
-      return NextResponse.json({ error: 'Radius must be between 250m and 10km' }, { status: 400 });
+    if (radius_km < 0.5 || radius_km > 10) {
+      return NextResponse.json({ error: 'Radius must be between 500m and 10km' }, { status: 400 });
     }
 
     if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {

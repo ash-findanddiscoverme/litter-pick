@@ -16,9 +16,9 @@ interface RadiusSetupProps {
   onComplete: () => void;
 }
 
-/** Slider steps in km — from 250m up to 10km */
+/** Slider steps in km — from 500m up to 10km */
 const SLIDER_STEPS = [
-  0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10,
+  0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10,
 ];
 
 function formatRadius(km: number): string {
@@ -123,11 +123,23 @@ export default function RadiusSetup({
     geocode();
   }, [postcodeOrTown, existingCenter]);
 
-  // Fit the map to the circle bounds whenever radius or center changes
+  // Fit the map to the circle bounds whenever radius or center changes.
+  // On initial mount the map ref may not be ready yet, so retry briefly.
   useEffect(() => {
-    if (center && mapRef.current) {
-      const { sw, ne } = circleBounds(center[0], center[1], radiusKm);
-      mapRef.current.fitBounds(sw, ne, 40);
+    if (!center) return;
+    const fit = () => {
+      if (mapRef.current) {
+        const { sw, ne } = circleBounds(center[0], center[1], radiusKm);
+        mapRef.current.fitBounds(sw, ne, 40);
+        return true;
+      }
+      return false;
+    };
+    if (!fit()) {
+      const timer = setInterval(() => {
+        if (fit()) clearInterval(timer);
+      }, 100);
+      return () => clearInterval(timer);
     }
   }, [radiusKm, center]);
 
@@ -290,7 +302,7 @@ export default function RadiusSetup({
               className="w-full h-2 bg-stone-100 rounded-full appearance-none cursor-pointer accent-brand-500"
             />
             <div className="flex justify-between text-xs text-stone-300 mt-1">
-              <span>250m</span>
+              <span>500m</span>
               <span>10km</span>
             </div>
           </div>
