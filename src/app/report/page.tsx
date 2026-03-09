@@ -9,7 +9,7 @@ import SeverityPicker from '@/components/report/SeverityPicker';
 import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import { compressImage, getCurrentPosition } from '@/lib/image';
+import { compressImage, getCurrentPosition, extractGPSFromImage } from '@/lib/image';
 import type { ReportSeverity } from '@/types/database';
 
 type Step = 'photo' | 'location' | 'details' | 'submitting' | 'success';
@@ -24,6 +24,7 @@ export default function ReportPage() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [locating, setLocating] = useState(false);
+  const [locationSource, setLocationSource] = useState<'exif' | 'gps' | 'manual' | null>(null);
 
   const handlePhoto = useCallback(async (file: File) => {
     const compressed = await compressImage(file);
@@ -31,12 +32,26 @@ export default function ReportPage() {
     setPhotoPreview(URL.createObjectURL(compressed));
 
     setLocating(true);
+
+    // 1. Try to extract GPS from the photo's EXIF metadata
+    const exifGPS = await extractGPSFromImage(file);
+    if (exifGPS) {
+      setLatitude(exifGPS.latitude);
+      setLongitude(exifGPS.longitude);
+      setLocationSource('exif');
+      setLocating(false);
+      setStep('location');
+      return;
+    }
+
+    // 2. Fall back to browser geolocation
     try {
       const pos = await getCurrentPosition();
       setLatitude(pos.coords.latitude);
       setLongitude(pos.coords.longitude);
+      setLocationSource('gps');
     } catch {
-      // User will set manually
+      setLocationSource('manual');
     }
     setLocating(false);
     setStep('location');
@@ -122,8 +137,20 @@ export default function ReportPage() {
               <div>
                 <h1 className="text-2xl font-bold text-loam">Where is it?</h1>
                 <p className="text-sm text-weathered mt-1">
-                  {locating ? 'Getting your location...' : 'Confirm or adjust the pin on the map'}
+                  {locating
+                    ? 'Getting your location...'
+                    : locationSource === 'exif'
+                    ? 'Location found from your photo — confirm or adjust the pin'
+                    : 'Confirm or adjust the pin on the map'}
                 </p>
+                {locationSource === 'exif' && (
+                  <span className="inline-flex items-center gap-1 mt-2 bg-brand-50 text-brand-600 rounded-full px-3 py-1 text-xs font-medium">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    From photo metadata
+                  </span>
+                )}
               </div>
 
               <HeatMap
