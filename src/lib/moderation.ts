@@ -1,28 +1,47 @@
-'use client';
-
 /**
  * Client-side image moderation using NSFWJS (TensorFlow.js).
  * Runs entirely in the browser — no server calls, no data leaves the device.
+ *
+ * Loaded from CDN at runtime to avoid bundling TensorFlow (~24MB) into
+ * the edge function output, which has a 4MB limit on Cloudflare Pages.
  *
  * Categories: Drawing, Hentai, Neutral, Porn, Sexy
  * We reject images where Porn + Hentai + Sexy combined confidence > 0.60
  */
 
-import type * as nsfwjs from 'nsfwjs';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-let modelPromise: Promise<nsfwjs.NSFWJS> | null = null;
+let modelPromise: Promise<any> | null = null;
 
-/** Lazy-load the NSFW model (cached after first call, ~4MB download) */
-async function getModel(): Promise<nsfwjs.NSFWJS> {
+/** Load a script from CDN and return when ready */
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+/** Lazy-load TF.js + NSFWJS from CDN, then load model (~4MB, cached) */
+async function getModel(): Promise<any> {
   if (!modelPromise) {
-    modelPromise = import('nsfwjs').then(async (mod) => {
-      // Use the MobileNetV2 mid model for better accuracy (~93%)
-      const model = await mod.load(
-        'https://nsfwjs.com/quant_mid/',
-        { size: 224 } as Parameters<typeof mod.load>[1]
-      );
+    modelPromise = (async () => {
+      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js');
+
+      const nsfwjs = (window as any).nsfwjs;
+      if (!nsfwjs) throw new Error('NSFWJS failed to load from CDN');
+
+      const model = await nsfwjs.load('https://nsfwjs.com/quant_mid/', { size: 224 });
       return model;
-    });
+    })();
   }
   return modelPromise;
 }
