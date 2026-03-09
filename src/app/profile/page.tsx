@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
+import { checkImageSafety } from '@/lib/moderation';
 import type { User } from '@/types/database';
 
 interface ProfileData {
@@ -110,6 +111,15 @@ export default function ProfilePage() {
     setError(null);
 
     try {
+      // Check image safety before uploading
+      const modResult = await checkImageSafety(file);
+      if (!modResult.safe) {
+        setError(modResult.reason || 'This image was flagged as inappropriate.');
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
       // Convert to WebP client-side (cropped to square, max 400px)
       const webpBlob = await convertToWebP(file);
 
