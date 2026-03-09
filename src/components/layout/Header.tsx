@@ -43,9 +43,14 @@ export default function Header() {
               <Button variant="secondary" size="sm">Profile</Button>
             </Link>
           ) : (
-            <Link href="/volunteer">
-              <Button size="sm">Volunteer</Button>
-            </Link>
+            <>
+              <Link href="/login">
+                <Button variant="outline" size="sm">Log in</Button>
+              </Link>
+              <Link href="/volunteer">
+                <Button size="sm">Volunteer</Button>
+              </Link>
+            </>
           )}
         </nav>
 
@@ -79,9 +84,14 @@ export default function Header() {
               My profile
             </Link>
           ) : (
-            <Link href="/volunteer" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
-              Volunteer
-            </Link>
+            <>
+              <Link href="/login" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
+                Log in
+              </Link>
+              <Link href="/volunteer" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
+                Volunteer
+              </Link>
+            </>
           )}
         </div>
       )}
