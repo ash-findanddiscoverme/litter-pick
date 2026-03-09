@@ -41,7 +41,7 @@ export default function LandingPage() {
                 <a href="/report" className="block">
                   <Button size="lg" fullWidth>Report litter</Button>
                 </a>
-                <a href="/volunteer" className="block">
+                <a href="/picks" className="block">
                   <Button size="lg" variant="outline" fullWidth>I want to help</Button>
                 </a>
               </div>
