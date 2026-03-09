@@ -44,6 +44,9 @@ export interface User {
   postcode_or_town: string;
   volunteer_type: VolunteerType;
   avatar_url: string | null;
+  volunteer_lat: number | null;
+  volunteer_lng: number | null;
+  volunteer_radius_km: number | null;
   created_at: string;
 }
 

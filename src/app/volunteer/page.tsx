@@ -7,9 +7,10 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import RadiusSetup from '@/components/volunteer/RadiusSetup';
 import { createClient } from '@/lib/supabase/client';
 
-type Step = 'form' | 'submitting' | 'success';
+type Step = 'form' | 'submitting' | 'setup-radius' | 'success';
 
 export default function VolunteerPage() {
   const [step, setStep] = useState<Step>('form');
@@ -59,7 +60,7 @@ export default function VolunteerPage() {
       const supabase = createClient();
       await supabase.auth.signInWithPassword({ email, password });
 
-      setStep('success');
+      setStep('setup-radius');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setStep('form');
@@ -164,6 +165,13 @@ export default function VolunteerPage() {
               </svg>
               <p className="text-sm text-weathered mt-4">Creating your account...</p>
             </div>
+          )}
+
+          {step === 'setup-radius' && (
+            <RadiusSetup
+              postcodeOrTown={postcodeOrTown}
+              onComplete={() => setStep('success')}
+            />
           )}
 
           {step === 'success' && (

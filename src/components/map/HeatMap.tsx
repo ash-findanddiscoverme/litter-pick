@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardR
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, MAP_STYLE_URL } from '@/lib/constants';
+import { generateCircle } from '@/lib/geo';
 import type { Hotspot } from '@/types/database';
 
 export interface HeatMapHandle {
@@ -18,6 +19,8 @@ interface HeatMapProps {
   initialZoom?: number;
   onLocationSelect?: (lng: number, lat: number) => void;
   onHotspotClick?: (hotspot: Hotspot) => void;
+  /** Show a translucent circle on the map for volunteer radius */
+  radiusCircle?: { lng: number; lat: number; radiusKm: number };
   className?: string;
 }
 
@@ -28,6 +31,7 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
   initialZoom,
   onLocationSelect,
   onHotspotClick,
+  radiusCircle,
   className = '',
 }, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -257,6 +261,52 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
     mapRef.current.flyTo({ center: [lng, lat], zoom: 15 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCenter, pickMode, mapLoaded]);
+
+  // Radius circle overlay
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    if (!radiusCircle) {
+      // Clean up if removed
+      if (map.getLayer('radius-fill')) map.removeLayer('radius-fill');
+      if (map.getLayer('radius-outline')) map.removeLayer('radius-outline');
+      if (map.getSource('radius-circle')) map.removeSource('radius-circle');
+      return;
+    }
+
+    const circleGeoJSON: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [generateCircle(radiusCircle.lng, radiusCircle.lat, radiusCircle.radiusKm)],
+    };
+
+    if (map.getSource('radius-circle')) {
+      (map.getSource('radius-circle') as maplibregl.GeoJSONSource).setData(circleGeoJSON);
+    } else {
+      map.addSource('radius-circle', { type: 'geojson', data: circleGeoJSON });
+
+      map.addLayer({
+        id: 'radius-fill',
+        type: 'fill',
+        source: 'radius-circle',
+        paint: {
+          'fill-color': '#4AA853',
+          'fill-opacity': 0.12,
+        },
+      });
+
+      map.addLayer({
+        id: 'radius-outline',
+        type: 'line',
+        source: 'radius-circle',
+        paint: {
+          'line-color': '#4AA853',
+          'line-width': 2,
+          'line-opacity': 0.6,
+        },
+      });
+    }
+  }, [radiusCircle, mapLoaded]);
 
   return (
     <div className={className || 'relative'} style={{ minHeight: 200 }}>
