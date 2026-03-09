@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { checkImageSafety } from '@/lib/moderation';
 
 interface PhotoCaptureProps {
   onPhotoSelected: (file: File) => void;
@@ -24,6 +23,7 @@ export default function PhotoCapture({ onPhotoSelected, preview, className }: Ph
     setModerationError(null);
 
     try {
+      const { checkImageSafety } = await import('@/lib/moderation');
       const result = await checkImageSafety(file);
       if (!result.safe) {
         setModerationError(result.reason || 'This image was flagged as inappropriate.');

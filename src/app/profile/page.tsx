@@ -8,7 +8,6 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import HeatMap from '@/components/map/HeatMap';
 import { createClient } from '@/lib/supabase/client';
-import { checkImageSafety } from '@/lib/moderation';
 import type { User } from '@/types/database';
 
 interface ReportPhoto {
@@ -123,6 +122,7 @@ export default function ProfilePage() {
 
     try {
       // Check image safety before uploading
+      const { checkImageSafety } = await import('@/lib/moderation');
       const modResult = await checkImageSafety(file);
       if (!modResult.safe) {
         setError(modResult.reason || 'This image was flagged as inappropriate.');
