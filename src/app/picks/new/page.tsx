@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -12,6 +12,25 @@ import { createClient } from '@/lib/supabase/client';
 import type { Hotspot } from '@/types/database';
 
 export default function NewPickPage() {
+  return (
+    <Suspense fallback={
+      <>
+        <Header />
+        <main className="flex-1 pt-16 flex items-center justify-center">
+          <svg className="animate-spin h-8 w-8 text-brand-500" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </main>
+        <Footer />
+      </>
+    }>
+      <NewPickContent />
+    </Suspense>
+  );
+}
+
+function NewPickContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefilledHotspotId = searchParams.get('hotspot_id') || '';
