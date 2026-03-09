@@ -25,7 +25,7 @@ export default function MapPage() {
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const mapRef = useRef<HeatMapHandle>(null);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout>>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
