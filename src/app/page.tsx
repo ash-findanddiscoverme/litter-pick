@@ -9,26 +9,24 @@ export default function LandingPage() {
       <main className="flex-1 pt-16">
         {/* Hero */}
         <section className="relative overflow-hidden bg-gradient-to-br from-brand-50 via-stone-50 to-stone-50">
-          <div className="max-w-6xl mx-auto px-4 pt-8 md:pt-12 pb-10 md:pb-16">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-500 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-                <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-                Now in Oxfordshire
-              </div>
-              <h1 className="text-4xl md:text-6xl font-extrabold text-loam tracking-tight leading-[1.1]">
-                Care for your{' '}
-                <span className="text-brand-500">corner.</span>
-              </h1>
-            </div>
-          </div>
-
-          {/* Hero image — countryside photo, sits under the heading */}
-          <div className="w-full">
+          {/* Hero image with overlaid heading */}
+          <div className="relative w-full">
             <img
               src="/hero.webp"
               alt="Oxfordshire countryside at golden hour"
-              className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover"
+              className="w-full h-64 sm:h-80 md:h-[28rem] lg:h-[32rem] object-cover"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+            <div className="absolute inset-0 flex flex-col justify-end max-w-6xl mx-auto px-4 pb-8 md:pb-12">
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-1.5 text-sm font-medium mb-4 w-fit">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                Now in Oxfordshire
+              </div>
+              <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-lg">
+                Care for your{' '}
+                <span className="text-brand-300">corner.</span>
+              </h1>
+            </div>
           </div>
 
           <div className="max-w-6xl mx-auto px-4 py-10 md:py-16">
