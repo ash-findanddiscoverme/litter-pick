@@ -35,6 +35,7 @@ export async function GET() {
           cleanups_completed: 0,
           areas_helped: 0,
         },
+        reports: [],
       });
     }
 
@@ -63,6 +64,7 @@ export async function GET() {
           cleanups_completed: 0,
           areas_helped: 0,
         },
+        reports: [],
       });
     }
 
@@ -86,6 +88,15 @@ export async function GET() {
 
     const uniqueAreas = new Set(completedCleanups?.map((c: { hotspot_id: string }) => c.hotspot_id) || []);
 
+    // Fetch user's reports (most recent first, only ones with photos)
+    const { data: userReports } = await serviceClient
+      .from('reports')
+      .select('id, image_url, severity, submitted_at, latitude, longitude')
+      .eq('user_id', user.id)
+      .not('image_url', 'is', null)
+      .order('submitted_at', { ascending: false })
+      .limit(20);
+
     return NextResponse.json({
       user: profile,
       stats: {
@@ -93,6 +104,7 @@ export async function GET() {
         cleanups_completed: completedCleanups?.length || 0,
         areas_helped: uniqueAreas.size,
       },
+      reports: userReports || [],
     });
   } catch (err) {
     console.error('Profile error:', err);

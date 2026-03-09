@@ -53,15 +53,23 @@ export async function POST(request: NextRequest) {
     // Add cache-busting param so browsers pick up the new image
     const avatarUrl = `${publicUrl.publicUrl}?v=${Date.now()}`;
 
-    // Update user profile with avatar URL
+    // Update user profile in the users table
     const { error: updateError } = await serviceClient
       .from('users')
       .update({ avatar_url: avatarUrl })
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('Profile update error:', updateError);
-      // Still return the URL — the image was uploaded successfully
+      console.error('Profile table update error:', updateError);
+    }
+
+    // Also store in auth user metadata so it persists even without a profile row
+    const { error: metaError } = await serviceClient.auth.admin.updateUserById(user.id, {
+      user_metadata: { ...user.user_metadata, avatar_url: avatarUrl },
+    });
+
+    if (metaError) {
+      console.error('User metadata update error:', metaError);
     }
 
     return NextResponse.json({ avatar_url: avatarUrl });

@@ -11,6 +11,15 @@ import { createClient } from '@/lib/supabase/client';
 import { checkImageSafety } from '@/lib/moderation';
 import type { User } from '@/types/database';
 
+interface ReportPhoto {
+  id: string;
+  image_url: string;
+  severity: string;
+  submitted_at: string;
+  latitude: number;
+  longitude: number;
+}
+
 interface ProfileData {
   user: User;
   stats: {
@@ -18,6 +27,7 @@ interface ProfileData {
     cleanups_completed: number;
     areas_helped: number;
   };
+  reports: ReportPhoto[];
 }
 
 /** Resize and convert an image file to WebP using Canvas */
@@ -309,6 +319,40 @@ export default function ProfilePage() {
               </div>
             ) : null}
           </Card>
+
+          {/* Report photos */}
+          {profile.reports && profile.reports.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-loam">My reports</h3>
+                <span className="text-xs text-stone-400">{profile.reports.length} photo{profile.reports.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 rounded-2xl overflow-hidden">
+                {profile.reports.map((report) => (
+                  <div key={report.id} className="relative aspect-square group">
+                    <img
+                      src={report.image_url}
+                      alt={`Litter report — ${report.severity}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
+                      <div className="w-full px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                          report.severity === 'bad'
+                            ? 'bg-red-500 text-white'
+                            : report.severity === 'medium'
+                            ? 'bg-amber-400 text-amber-900'
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {report.severity}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Quick actions */}
           <div className="space-y-2">

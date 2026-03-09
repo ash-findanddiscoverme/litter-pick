@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceRoleClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 
 export const runtime = 'edge';
 
@@ -16,6 +16,16 @@ export async function POST(request: NextRequest) {
 
     if (!latitude || !longitude || !severity) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Try to get the logged-in user (reports work without auth too)
+    let userId: string | null = null;
+    try {
+      const authClient = createServerSupabaseClient();
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) userId = user.id;
+    } catch {
+      // Not logged in — that's fine
     }
 
     let image_url: string | null = null;
@@ -51,6 +61,7 @@ export async function POST(request: NextRequest) {
         severity,
         note: note || null,
         image_url,
+        user_id: userId,
         source: 'web',
         status: 'pending',
       })

@@ -10,6 +10,7 @@ export type PhotoType = 'before' | 'after';
 
 export interface Report {
   id: string;
+  user_id: string | null;
   image_url: string | null;
   latitude: number;
   longitude: number;
