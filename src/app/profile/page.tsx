@@ -260,6 +260,29 @@ export default function ProfilePage() {
             </div>
           </Card>
 
+          {/* Volunteer area */}
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-loam">Volunteer area</h3>
+                {profile.user.volunteer_radius_km ? (
+                  <p className="text-xs text-weathered mt-0.5">
+                    {profile.user.volunteer_radius_km} km radius
+                    {profile.user.postcode_or_town ? ` from ${profile.user.postcode_or_town}` : ''}
+                  </p>
+                ) : (
+                  <p className="text-xs text-weathered mt-0.5">Not set yet</p>
+                )}
+              </div>
+              <a
+                href="/volunteer/edit-radius"
+                className="text-sm font-medium text-brand-500 hover:text-brand-600"
+              >
+                {profile.user.volunteer_radius_km ? 'Edit' : 'Set up'}
+              </a>
+            </div>
+          </Card>
+
           {/* Quick actions */}
           <div className="space-y-2">
             <a href="/map" className="block">

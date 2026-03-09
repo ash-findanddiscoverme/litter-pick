@@ -7,20 +7,39 @@ import Button from '@/components/ui/Button';
 
 interface RadiusSetupProps {
   postcodeOrTown: string;
+  /** Pre-existing center [lng, lat] when editing */
+  existingCenter?: [number, number];
+  /** Pre-existing radius when editing */
+  existingRadiusKm?: number;
+  /** Label for the skip/cancel button */
+  cancelLabel?: string;
   onComplete: () => void;
 }
 
-export default function RadiusSetup({ postcodeOrTown, onComplete }: RadiusSetupProps) {
-  const [center, setCenter] = useState<[number, number] | null>(null);
-  const [radiusKm, setRadiusKm] = useState(5);
-  const [geocoding, setGeocoding] = useState(true);
+export default function RadiusSetup({
+  postcodeOrTown,
+  existingCenter,
+  existingRadiusKm,
+  cancelLabel = 'Skip for now',
+  onComplete,
+}: RadiusSetupProps) {
+  const [center, setCenter] = useState<[number, number] | null>(existingCenter || null);
+  const [radiusKm, setRadiusKm] = useState(existingRadiusKm || 5);
+  const [geocoding, setGeocoding] = useState(!existingCenter);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const mapRef = useRef<HeatMapHandle>(null);
 
-  // Geocode the postcode/town on mount
+  // Geocode the postcode/town on mount (skip if we already have coordinates)
   useEffect(() => {
+    if (existingCenter) return; // Already have coordinates from profile
+
     async function geocode() {
+      if (!postcodeOrTown) {
+        setError('No location provided.');
+        setGeocoding(false);
+        return;
+      }
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(postcodeOrTown)}&countrycodes=gb&limit=1`,
@@ -40,7 +59,7 @@ export default function RadiusSetup({ postcodeOrTown, onComplete }: RadiusSetupP
       setGeocoding(false);
     }
     geocode();
-  }, [postcodeOrTown]);
+  }, [postcodeOrTown, existingCenter]);
 
   const handleSave = async () => {
     if (!center) return;
@@ -101,7 +120,9 @@ export default function RadiusSetup({ postcodeOrTown, onComplete }: RadiusSetupP
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-loam">Set your volunteer area</h2>
+        <h2 className="text-2xl font-bold text-loam">
+          {existingRadiusKm ? 'Edit your volunteer area' : 'Set your volunteer area'}
+        </h2>
         <p className="text-sm text-weathered mt-1">
           How far are you willing to go to help clean up?
         </p>
@@ -162,7 +183,7 @@ export default function RadiusSetup({ postcodeOrTown, onComplete }: RadiusSetupP
           onClick={onComplete}
           className="w-full text-sm text-stone-400 hover:text-weathered text-center py-2"
         >
-          Skip for now
+          {cancelLabel}
         </button>
       </div>
     </div>
