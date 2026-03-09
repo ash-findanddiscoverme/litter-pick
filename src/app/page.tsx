@@ -25,7 +25,7 @@ export default function LandingPage() {
           {/* Hero image — countryside photo, sits under the heading */}
           <div className="w-full">
             <img
-              src="/hero.jpg"
+              src="/hero.webp"
               alt="Oxfordshire countryside at golden hour"
               className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover"
             />
@@ -66,7 +66,7 @@ export default function LandingPage() {
                 {
                   step: '1',
                   title: 'Spot it',
-                  image: '/spot-it.jpg',
+                  image: '/spot-it.webp',
                   imageAlt: 'Litter on a roadside verge',
                   desc: 'See litter? Snap a quick photo and drop a pin. No account needed \u2014 it only takes a few seconds.',
                   icon: (
@@ -79,7 +79,7 @@ export default function LandingPage() {
                 {
                   step: '2',
                   title: 'Pick it',
-                  image: '/join-up.jpg',
+                  image: '/join-up.webp',
                   imageAlt: 'Volunteers picking litter together',
                   desc: 'When enough reports build up, a local pick can take shape. Sign up to volunteer and we\u2019ll help connect you with nearby clean-ups.',
                   icon: (
@@ -91,7 +91,7 @@ export default function LandingPage() {
                 {
                   step: '3',
                   title: 'Clear it',
-                  image: '/clear-it.jpg',
+                  image: '/clear-it.webp',
                   imageAlt: 'Clean countryside lane after a litter pick',
                   desc: 'Grab a bag, head out, and help make the area feel cared for again. Add an after photo and the map updates to show the difference.',
                   icon: (
