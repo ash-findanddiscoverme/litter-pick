@@ -198,7 +198,7 @@ export default function ReportPage() {
 
           {/* Step 2: Location */}
           {step === 'location' && (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-3" style={{ minHeight: 'calc(100vh - 8rem)' }}>
               <div>
                 <h1 className="text-2xl font-bold text-loam">Where is it?</h1>
                 <p className="text-sm text-weathered mt-1">
@@ -260,12 +260,16 @@ export default function ReportPage() {
                 initialCenter={longitude && latitude ? [longitude, latitude] : DEFAULT_CENTER}
                 initialZoom={longitude && latitude ? 15 : DEFAULT_ZOOM}
                 onLocationSelect={handleLocationSelect}
-                className="h-64"
+                className="flex-1 min-h-[50vh]"
               />
 
-              {latitude && longitude && (
+              {latitude && longitude ? (
                 <p className="text-xs text-stone-300 text-center">
                   {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                </p>
+              ) : (
+                <p className="text-xs text-amber-600 text-center font-medium">
+                  Tap the map or search above to set the location
                 </p>
               )}
 
@@ -273,10 +277,24 @@ export default function ReportPage() {
                 <Button variant="ghost" onClick={() => setStep('photo')}>
                   Back
                 </Button>
-                <Button fullWidth onClick={() => setStep('details')}>
+                <Button
+                  fullWidth
+                  onClick={() => {
+                    if (!latitude || !longitude) {
+                      setError('Please set a location first');
+                      return;
+                    }
+                    setError('');
+                    setStep('details');
+                  }}
+                  disabled={!latitude || !longitude}
+                >
                   Confirm location
                 </Button>
               </div>
+              {error && step === 'location' && (
+                <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2">{error}</p>
+              )}
             </div>
           )}
 
