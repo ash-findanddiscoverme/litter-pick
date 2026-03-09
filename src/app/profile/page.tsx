@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import HeatMap from '@/components/map/HeatMap';
+import type { HeatMapHandle } from '@/components/map/HeatMap';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@/types/database';
 
@@ -27,6 +28,14 @@ interface ProfileData {
     areas_helped: number;
   };
   reports: ReportPhoto[];
+}
+
+/** Calculate bounding box for a circle so fitBounds keeps the edge in view. */
+function circleBounds(lng: number, lat: number, radiusKm: number) {
+  const earthRadius = 6371;
+  const latDelta = (radiusKm / earthRadius) * (180 / Math.PI);
+  const lngDelta = (radiusKm / (earthRadius * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI);
+  return { sw: [lng - lngDelta, lat - latDelta] as [number, number], ne: [lng + lngDelta, lat + latDelta] as [number, number] };
 }
 
 /** Resize and convert an image file to WebP using Canvas */
@@ -65,6 +74,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const profileMapRef = useRef<HeatMapHandle>(null);
   const router = useRouter();
 
   const loadProfile = () => {
@@ -100,6 +110,23 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfile();
   }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fit the profile map to show the full volunteer circle
+  useEffect(() => {
+    if (!profile?.user.volunteer_lat || !profile?.user.volunteer_lng || !profile?.user.volunteer_radius_km) return;
+    const fit = () => {
+      if (profileMapRef.current) {
+        const { sw, ne } = circleBounds(profile.user.volunteer_lng!, profile.user.volunteer_lat!, profile.user.volunteer_radius_km!);
+        profileMapRef.current.fitBounds(sw, ne, 30);
+        return true;
+      }
+      return false;
+    };
+    if (!fit()) {
+      const timer = setInterval(() => { if (fit()) clearInterval(timer); }, 100);
+      return () => clearInterval(timer);
+    }
+  }, [profile]);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -307,6 +334,7 @@ export default function ProfilePage() {
             {profile.user.volunteer_lat && profile.user.volunteer_lng && profile.user.volunteer_radius_km ? (
               <div className="relative rounded-xl overflow-hidden" style={{ height: 180 }}>
                 <HeatMap
+                  ref={profileMapRef}
                   initialCenter={[profile.user.volunteer_lng, profile.user.volunteer_lat]}
                   initialZoom={13}
                   radiusCircle={{
