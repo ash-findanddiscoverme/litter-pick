@@ -21,9 +21,12 @@ interface ProfileData {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
+  const loadProfile = () => {
+    setLoading(true);
+    setError(null);
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
@@ -39,12 +42,21 @@ export default function ProfilePage() {
         .then((data) => {
           if (data?.user) {
             setProfile(data);
+          } else {
+            setError('Could not load profile data');
           }
           setLoading(false);
         })
-        .catch(() => setLoading(false));
+        .catch((err) => {
+          setError(err.message || 'Something went wrong');
+          setLoading(false);
+        });
     });
-  }, [router]);
+  };
+
+  useEffect(() => {
+    loadProfile();
+  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -72,7 +84,15 @@ export default function ProfilePage() {
       <>
         <Header />
         <main className="flex-1 pt-16 flex items-center justify-center">
-          <p className="text-weathered">Could not load profile</p>
+          <div className="text-center space-y-3">
+            <p className="text-weathered">{error || 'Could not load profile'}</p>
+            <button
+              onClick={loadProfile}
+              className="text-sm text-brand-500 hover:text-brand-600 underline"
+            >
+              Try again
+            </button>
+          </div>
         </main>
         <Footer />
       </>
