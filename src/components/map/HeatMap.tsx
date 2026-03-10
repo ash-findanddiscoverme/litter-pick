@@ -325,7 +325,7 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
   }, [radiusCircle, mapLoaded]);
 
   return (
-    <div className={`relative ${className || ''}`} style={className ? undefined : { minHeight: 200 }}>
+    <div className={className || 'relative'} style={className ? undefined : { minHeight: 200 }}>
       {/* MapLibre forcibly sets position:relative on its container, so we cannot
           use absolute positioning on it. Use absolute fill instead. */}
       <div

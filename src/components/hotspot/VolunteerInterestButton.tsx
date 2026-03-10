@@ -10,7 +10,6 @@ interface VolunteerInterestButtonProps {
 }
 
 const interestOptions: { type: InterestType; label: string }[] = [
-  { type: 'help', label: 'I\u2019d help clear this' },
   { type: 'join', label: 'I\u2019d join a pick here' },
   { type: 'organise', label: 'I could organise this' },
 ];

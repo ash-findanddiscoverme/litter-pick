@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import maplibregl from 'maplibre-gl';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import PhotoCapture from '@/components/report/PhotoCapture';
@@ -12,9 +13,53 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { compressImage } from '@/lib/image';
+import { MAP_STYLE_URL } from '@/lib/constants';
 import type { Cleanup, Hotspot } from '@/types/database';
 
 export const runtime = 'edge';
+
+interface Volunteer {
+  id: string;
+  first_name: string;
+  avatar_url: string | null;
+  interest_type: string;
+}
+
+interface Organiser {
+  id: string;
+  first_name: string;
+  avatar_url: string | null;
+}
+
+/** Inline map for pick detail */
+function PickMap({ lat, lng }: { lat: number; lng: number }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const key = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: MAP_STYLE_URL + key,
+      center: [lng, lat],
+      zoom: 15,
+      interactive: false,
+      attributionControl: false,
+    });
+
+    new maplibregl.Marker({ color: '#4AA853' })
+      .setLngLat([lng, lat])
+      .addTo(map);
+
+    return () => { map.remove(); };
+  }, [lat, lng]);
+
+  return (
+    <div className="rounded-2xl overflow-hidden bg-stone-100" style={{ height: 180 }}>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
+}
 
 type Step = 'info' | 'complete' | 'submitting' | 'success';
 
@@ -23,6 +68,8 @@ export default function CleanupPage() {
   const id = params.id as string;
   const [cleanup, setCleanup] = useState<Cleanup | null>(null);
   const [hotspot, setHotspot] = useState<Hotspot | null>(null);
+  const [organiser, setOrganiser] = useState<Organiser | null>(null);
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>('info');
 
@@ -41,10 +88,29 @@ export default function CleanupPage() {
       .then((data) => {
         setCleanup(data.cleanup || null);
         setHotspot(data.hotspot || null);
+        setOrganiser(data.organiser || null);
+        setVolunteers(data.volunteers || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [id]);
+
+  // Dynamic page title and meta description
+  useEffect(() => {
+    if (!hotspot) return;
+    const name = hotspot.area_name || 'Litter Pick';
+    const coords = `${hotspot.centroid_latitude.toFixed(5)}, ${hotspot.centroid_longitude.toFixed(5)}`;
+
+    document.title = `${name} - Litter Pick`;
+
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', `Join a litter pick at ${name} (${coords}). Help clear the area, team up with locals, and make your community cleaner.`);
+  }, [hotspot]);
 
   const handlePhoto = useCallback(async (file: File) => {
     const compressed = await compressImage(file);
@@ -82,6 +148,17 @@ export default function CleanupPage() {
     }
   };
 
+  const statusLabel = (s: string) => {
+    switch (s) {
+      case 'scheduled': return 'Scheduled';
+      case 'forming': return 'Forming';
+      case 'in_progress': return 'In progress';
+      case 'completed': return 'Completed';
+      case 'cancelled': return 'Cancelled';
+      default: return s;
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -116,16 +193,20 @@ export default function CleanupPage() {
         <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
           {step === 'info' && (
             <>
+              {/* Status and title */}
               <div>
                 <Badge className="bg-brand-50 text-brand-600 mb-2">
-                  {cleanup.status}
+                  {statusLabel(cleanup.status)}
                 </Badge>
                 <h1 className="text-2xl font-bold text-loam">
                   {hotspot?.area_name || 'Litter Pick'}
                 </h1>
                 {cleanup.proposed_time && (
-                  <p className="text-sm text-weathered mt-1">
-                    Planned for {new Date(cleanup.proposed_time).toLocaleDateString('en-GB', {
+                  <p className="text-sm text-brand-500 font-medium mt-1">
+                    <svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                    </svg>
+                    {new Date(cleanup.proposed_time).toLocaleDateString('en-GB', {
                       weekday: 'long',
                       day: 'numeric',
                       month: 'long',
@@ -136,8 +217,32 @@ export default function CleanupPage() {
                 )}
               </div>
 
+              {/* Map */}
+              {hotspot && (
+                <div className="space-y-2">
+                  <PickMap lat={hotspot.centroid_latitude} lng={hotspot.centroid_longitude} />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-stone-400 font-mono">
+                      {hotspot.centroid_latitude.toFixed(5)}, {hotspot.centroid_longitude.toFixed(5)}
+                    </p>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${hotspot.centroid_latitude},${hotspot.centroid_longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-600 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                      </svg>
+                      Get directions
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* Stats */}
               <Card>
-                <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-2xl font-bold text-loam">{cleanup.volunteer_count}</p>
                     <p className="text-xs text-weathered">Volunteers</p>
@@ -146,9 +251,79 @@ export default function CleanupPage() {
                     <p className="text-2xl font-bold text-loam">{cleanup.bags_collected ?? '\u2014'}</p>
                     <p className="text-xs text-weathered">Bags collected</p>
                   </div>
+                  <div>
+                    <p className="text-2xl font-bold text-loam">{hotspot?.report_count ?? '\u2014'}</p>
+                    <p className="text-xs text-weathered">Reports</p>
+                  </div>
                 </div>
               </Card>
 
+              {/* Organiser */}
+              {organiser && (
+                <Card>
+                  <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">Organised by</h3>
+                  <div className="flex items-center gap-3">
+                    {organiser.avatar_url ? (
+                      <img
+                        src={organiser.avatar_url}
+                        alt={organiser.first_name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-brand-50 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-brand-500">
+                          {organiser.first_name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-sm font-medium text-loam">{organiser.first_name}</p>
+                  </div>
+                </Card>
+              )}
+
+              {/* Volunteers */}
+              {volunteers.length > 0 && (
+                <Card>
+                  <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">
+                    Who&apos;s joining ({volunteers.length})
+                  </h3>
+                  <div className="space-y-2.5">
+                    {volunteers.map((v) => (
+                      <div key={v.id} className="flex items-center gap-3">
+                        {v.avatar_url ? (
+                          <img
+                            src={v.avatar_url}
+                            alt={v.first_name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-stone-400">
+                              {v.first_name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-loam">{v.first_name}</p>
+                          {v.interest_type === 'organise' && (
+                            <p className="text-[11px] text-brand-500">Organiser</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Notes */}
+              {cleanup.notes && (
+                <Card>
+                  <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-2">Notes</h3>
+                  <p className="text-sm text-loam">{cleanup.notes}</p>
+                </Card>
+              )}
+
+              {/* Action buttons */}
               {cleanup.status !== 'completed' && (
                 <Button fullWidth onClick={() => setStep('complete')}>
                   Log the pick

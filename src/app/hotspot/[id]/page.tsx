@@ -54,6 +54,23 @@ export default function HotspotDetailPage() {
       .catch(() => {});
   }, [id]);
 
+  // Dynamic page title and meta description
+  useEffect(() => {
+    if (!hotspot) return;
+    const name = hotspot.area_name || 'Litter hotspot';
+    const coords = `${hotspot.centroid_latitude.toFixed(5)}, ${hotspot.centroid_longitude.toFixed(5)}`;
+
+    document.title = `${name} - Litter Hotspot`;
+
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', `Join a litter pick at ${name} (${coords}). Help clear the area, team up with locals, and make your community cleaner.`);
+  }, [hotspot]);
+
   const handleRename = async () => {
     if (!nameInput.trim() || !hotspot) return;
     setSavingName(true);
@@ -406,7 +423,7 @@ export default function HotspotDetailPage() {
 
           {/* Organise a pick */}
           {hotspot.status !== 'cleaned' && (
-            <a href={`/picks/new?hotspot_id=${hotspot.id}`}>
+            <a href={`/picks/new?hotspot_id=${hotspot.id}`} className="block mt-4">
               <Button fullWidth variant="outline">
                 <svg className="w-4 h-4 inline-block mr-1.5 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
@@ -418,16 +435,21 @@ export default function HotspotDetailPage() {
 
           {/* Scheduled pick info */}
           {cleanup && cleanup.status === 'scheduled' && cleanup.proposed_time && (
-            <Card>
-              <div className="flex items-center gap-2 mb-1">
-                <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                </svg>
-                <h3 className="text-sm font-semibold text-loam">Pick scheduled</h3>
-              </div>
-              <p className="text-sm text-brand-500 font-medium">{formatPickDate(cleanup.proposed_time)}</p>
-              <p className="text-xs text-stone-400 mt-1">{cleanup.volunteer_count} {cleanup.volunteer_count === 1 ? 'person' : 'people'} joining</p>
-            </Card>
+            <a href={`/pick/${cleanup.id}`} className="block">
+              <Card>
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                  </svg>
+                  <h3 className="text-sm font-semibold text-loam">Pick scheduled</h3>
+                  <svg className="w-4 h-4 text-stone-300 ml-auto" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+                <p className="text-sm text-brand-500 font-medium">{formatPickDate(cleanup.proposed_time)}</p>
+                <p className="text-xs text-stone-400 mt-1">{cleanup.volunteer_count} {cleanup.volunteer_count === 1 ? 'person' : 'people'} joining</p>
+              </Card>
+            </a>
           )}
 
           {/* Completion link */}
