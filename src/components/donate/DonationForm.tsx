@@ -6,10 +6,10 @@ import Button from '@/components/ui/Button';
 const PRESET_AMOUNTS = [5, 10, 25, 50];
 
 const IMPACT_MESSAGES: Record<number, string> = {
-  5: 'Covers bags and gloves for two clean-ups.',
+  5: 'Covers bags and gloves for two picks.',
   10: 'Funds supplies for a local litter pick.',
   25: 'Helps map and monitor a new hotspot area.',
-  50: 'Supports a full community clean-up event.',
+  50: 'Supports a full community pick event.',
 };
 
 export default function DonationForm() {

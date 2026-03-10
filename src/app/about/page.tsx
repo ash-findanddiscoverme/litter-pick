@@ -17,7 +17,7 @@ export default function AboutPage() {
           <div className="mt-8 space-y-5 text-weathered leading-relaxed">
             <p>
               Litter Pick is a simple tool for reporting rubbish, finding local hotspots,
-              and organising clean-ups in your area. It started in Oxfordshire and is built
+              and organising picks in your area. It started in Oxfordshire and is built
               for anyone who wants to look after the places they live.
             </p>
             <p>
@@ -40,7 +40,7 @@ export default function AboutPage() {
             <p>
               <span className="font-medium text-loam">Join up</span> — hotspots form
               from clusters of reports. Sign up to volunteer and get connected with
-              clean-ups nearby.
+              picks nearby.
             </p>
             <p>
               <span className="font-medium text-loam">Clear it</span> — head out,

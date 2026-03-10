@@ -242,7 +242,7 @@ export default function HotspotDetailPage() {
               {/* After image if available */}
               {hotspot.latest_after_image_url && (
                 <div className="mt-3">
-                  <p className="text-xs font-medium text-weathered mb-1.5">After clean-up</p>
+                  <p className="text-xs font-medium text-weathered mb-1.5">After pick</p>
                   <img
                     src={hotspot.latest_after_image_url}
                     alt="After cleanup"
@@ -381,17 +381,17 @@ export default function HotspotDetailPage() {
             </div>
           </Card>
 
-          {/* Cleanup info */}
+          {/* Pick info */}
           {cleanup && (
             <Card>
-              <h3 className="text-sm font-semibold text-loam mb-2">Clean-up planned</h3>
+              <h3 className="text-sm font-semibold text-loam mb-2">Pick planned</h3>
               <p className="text-sm text-weathered">
                 Status: {cleanup.status}
                 {cleanup.proposed_time && ` · ${new Date(cleanup.proposed_time).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}
               </p>
               {cleanup.status === 'scheduled' || cleanup.status === 'in_progress' ? (
-                <a href={`/cleanup/${cleanup.id}`} className="block mt-3">
-                  <Button size="sm" fullWidth>View clean-up details</Button>
+                <a href={`/pick/${cleanup.id}`} className="block mt-3">
+                  <Button size="sm" fullWidth>View pick details</Button>
                 </a>
               ) : null}
             </Card>
@@ -432,7 +432,7 @@ export default function HotspotDetailPage() {
 
           {/* Completion link */}
           {(hotspot.status === 'cleanup_forming' || hotspot.status === 'needs_attention') && cleanup && (
-            <a href={`/cleanup/${cleanup.id}`}>
+            <a href={`/pick/${cleanup.id}`}>
               <Button fullWidth variant="secondary">
                 Upload after photo / mark complete
               </Button>

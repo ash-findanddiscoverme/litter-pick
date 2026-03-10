@@ -86,7 +86,7 @@ export default function PickCard({ pick }: PickCardProps) {
   };
 
   return (
-    <a href={`/cleanup/${pick.id}`} className="block">
+    <a href={`/pick/${pick.id}`} className="block">
     <Card>
       <div className="space-y-3">
         {/* Organiser */}

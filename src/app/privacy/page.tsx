@@ -30,7 +30,7 @@ export default function PrivacyPage() {
       <p className="font-medium text-loam">Profile data</p>
       <p>
         If you sign up as a volunteer: your name, email address, and postcode area.
-        Your name and general area may be visible to other volunteers and clean-up
+        Your name and general area may be visible to other volunteers and pick
         organisers in the same locality.
       </p>
 
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
 
       <p className="font-medium text-loam">Uploaded image data</p>
       <p>
-        Photos you upload as part of litter reports or clean-up logs. These may be
+        Photos you upload as part of litter reports or pick logs. These may be
         resized, compressed, and displayed publicly on the Service. Please do not
         include identifiable individuals in photos unless you have their permission.
       </p>
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
       <ul className="list-disc pl-5 space-y-1.5">
         <li>Provide and operate the Service, including displaying reports on the map</li>
         <li>Create and manage your account</li>
-        <li>Connect volunteers with clean-ups in their area</li>
+        <li>Connect volunteers with picks in their area</li>
         <li>Process, moderate, and display uploaded content</li>
         <li>Respond to reports, complaints, and support requests</li>
         <li>Detect and prevent misuse, fraud, and security threats</li>
@@ -116,7 +116,7 @@ export default function PrivacyPage() {
         <li>
           <span className="font-medium text-loam">Other users</span> — litter reports
           (including photos and locations) are visible on the public map. Volunteer
-          names and general areas may be visible to other volunteers and clean-up
+          names and general areas may be visible to other volunteers and pick
           organisers.
         </li>
         <li>
@@ -158,7 +158,7 @@ export default function PrivacyPage() {
         </li>
         <li>
           <span className="font-medium text-loam">Uploaded photos</span> — retained
-          for as long as the associated report or clean-up log exists on the platform.
+          for as long as the associated report or pick log exists on the platform.
         </li>
         <li>
           <span className="font-medium text-loam">Technical and analytics data</span> —

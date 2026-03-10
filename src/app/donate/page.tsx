@@ -5,7 +5,7 @@ import DonationForm from '@/components/donate/DonationForm';
 export const metadata = {
   title: 'Donate — Litter Pick',
   description:
-    'Support Litter Pick with a one-off or monthly donation. Your contribution helps fund clean-ups, volunteer supplies, and litter mapping across Oxfordshire.',
+    'Support Litter Pick with a one-off or monthly donation. Your contribution helps fund picks, volunteer supplies, and litter mapping across Oxfordshire.',
 };
 
 export default function DonatePage() {

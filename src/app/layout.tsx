@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Litter Pick — Care for your corner.',
-  description: 'Report litter, find local hotspots, and join clean-ups near you. A simpler way to look after where you live.',
+  description: 'Report litter, find local hotspots, and join picks near you. A simpler way to look after where you live.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

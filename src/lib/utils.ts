@@ -25,7 +25,7 @@ export function formatDate(dateStr: string): string {
 export function hotspotStatusLabel(status: HotspotStatus): string {
   const labels: Record<HotspotStatus, string> = {
     needs_attention: 'Needs attention',
-    cleanup_forming: 'Cleanup forming',
+    cleanup_forming: 'Pick forming',
     recently_improved: 'Recently improved',
     cleaned: 'Cleared',
   };

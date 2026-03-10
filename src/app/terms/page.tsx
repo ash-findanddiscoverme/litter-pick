@@ -19,7 +19,7 @@ export default function TermsPage() {
       <h2 className="text-xl font-semibold text-loam pt-4">1. What Litter Pick is</h2>
       <p>
         Litter Pick is a community platform for reporting litter, identifying local
-        hotspots, and coordinating volunteer clean-ups. It is designed for individuals,
+        hotspots, and coordinating volunteer picks. It is designed for individuals,
         community groups, and local organisations who want to help keep their
         neighbourhoods clean. The Service is currently focused on Oxfordshire, England,
         though we may expand in the future.
@@ -28,7 +28,7 @@ export default function TermsPage() {
       <h2 className="text-xl font-semibold text-loam pt-4">2. Accounts</h2>
       <p>
         Some features of Litter Pick (such as submitting a litter report) do not require
-        an account. Other features (such as volunteering for clean-ups or viewing your
+        an account. Other features (such as volunteering for picks or viewing your
         report history) require you to register.
       </p>
       <p>

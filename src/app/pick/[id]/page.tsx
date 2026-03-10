@@ -102,7 +102,7 @@ export default function CleanupPage() {
       <>
         <Header />
         <main className="flex-1 pt-16 flex items-center justify-center">
-          <p className="text-weathered">Clean-up not found</p>
+          <p className="text-weathered">Pick not found</p>
         </main>
         <Footer />
       </>
@@ -121,7 +121,7 @@ export default function CleanupPage() {
                   {cleanup.status}
                 </Badge>
                 <h1 className="text-2xl font-bold text-loam">
-                  {hotspot?.area_name || 'Clean-up'}
+                  {hotspot?.area_name || 'Litter Pick'}
                 </h1>
                 {cleanup.proposed_time && (
                   <p className="text-sm text-weathered mt-1">
@@ -151,7 +151,7 @@ export default function CleanupPage() {
 
               {cleanup.status !== 'completed' && (
                 <Button fullWidth onClick={() => setStep('complete')}>
-                  Log the clean-up
+                  Log the pick
                 </Button>
               )}
 

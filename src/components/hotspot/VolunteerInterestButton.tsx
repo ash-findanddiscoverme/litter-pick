@@ -11,7 +11,7 @@ interface VolunteerInterestButtonProps {
 
 const interestOptions: { type: InterestType; label: string }[] = [
   { type: 'help', label: 'I\u2019d help clear this' },
-  { type: 'join', label: 'I\u2019d join a clean-up here' },
+  { type: 'join', label: 'I\u2019d join a pick here' },
   { type: 'organise', label: 'I could organise this' },
 ];
 
@@ -52,7 +52,7 @@ export default function VolunteerInterestButton({ hotspotId }: VolunteerInterest
       <div className="bg-brand-50 rounded-2xl p-5 text-center">
         <p className="text-sm font-semibold text-brand-600">Noted. You&apos;re in.</p>
         <p className="text-xs text-brand-500 mt-1">
-          We&apos;ll let you know when a clean-up forms here.
+          We&apos;ll let you know when a pick forms here.
         </p>
       </div>
     );

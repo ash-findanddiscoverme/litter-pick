@@ -77,7 +77,7 @@ export default function VolunteerPage() {
               <div className="mb-6">
                 <h1 className="text-2xl font-bold text-loam">Sign up to volunteer</h1>
                 <p className="text-sm text-weathered mt-1">
-                  Help clean up your local area. We&apos;ll connect you with clean-ups nearby.
+                  Help clean up your local area. We&apos;ll connect you with picks nearby.
                 </p>
               </div>
 
@@ -178,7 +178,7 @@ export default function VolunteerPage() {
             <Card className="text-center py-8">
               <h2 className="text-2xl font-bold text-loam">You&apos;re signed up.</h2>
               <p className="text-sm text-weathered mt-3 max-w-xs mx-auto leading-relaxed">
-                We&apos;ll notify you when clean-ups form near your area.
+                We&apos;ll notify you when picks form near your area.
               </p>
               <div className="mt-6 space-y-3">
                 <a href="/map" className="block">
