@@ -256,10 +256,18 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
     };
   }, [pickMode, mapLoaded, handleMapClick]);
 
-  // Set marker programmatically (e.g. from geolocation)
+  // Set marker programmatically (e.g. from geolocation or EXIF).
+  // Only place a marker when a real location has been provided, i.e.
+  // when initialCenter differs from the default map centre.
   useEffect(() => {
     if (!pickMode || !mapRef.current || !mapLoaded || !initialCenter) return;
+
     const [lng, lat] = initialCenter;
+    const [defLng, defLat] = DEFAULT_CENTER;
+    const isDefault = Math.abs(lng - defLng) < 0.0001 && Math.abs(lat - defLat) < 0.0001;
+
+    // Don't auto-place a pin at the default centre — let the user tap
+    if (isDefault) return;
 
     if (markerRef.current) {
       markerRef.current.setLngLat([lng, lat]);
