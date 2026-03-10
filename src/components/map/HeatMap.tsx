@@ -61,6 +61,7 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
 
     const container = mapContainer.current;
     const styleUrl = MAP_STYLE_URL + maptilerKey;
+    console.log('[HeatMap] style URL:', styleUrl, '| key length:', maptilerKey.length);
 
     const map = new maplibregl.Map({
       container,
