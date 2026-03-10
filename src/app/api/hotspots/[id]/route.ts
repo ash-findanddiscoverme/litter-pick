@@ -30,7 +30,20 @@ export async function GET(
       .limit(1)
       .maybeSingle();
 
-    return NextResponse.json({ hotspot, cleanup: cleanup || null });
+    // Fetch all report photos linked to this hotspot
+    const { data: reportPhotos } = await supabase
+      .from('reports')
+      .select('id, image_url, severity, submitted_at')
+      .eq('hotspot_id', id)
+      .not('image_url', 'is', null)
+      .order('submitted_at', { ascending: false })
+      .limit(30);
+
+    return NextResponse.json({
+      hotspot,
+      cleanup: cleanup || null,
+      photos: reportPhotos || [],
+    });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

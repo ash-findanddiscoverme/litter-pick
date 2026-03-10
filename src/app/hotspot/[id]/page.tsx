@@ -11,6 +11,13 @@ import VolunteerInterestButton from '@/components/hotspot/VolunteerInterestButto
 import { hotspotStatusLabel, hotspotStatusColor, formatDate, formatPickDate } from '@/lib/utils';
 import type { Hotspot, Cleanup } from '@/types/database';
 
+interface ReportPhoto {
+  id: string;
+  image_url: string;
+  severity: string;
+  submitted_at: string;
+}
+
 export const runtime = 'edge';
 
 export default function HotspotDetailPage() {
@@ -18,6 +25,8 @@ export default function HotspotDetailPage() {
   const id = params.id as string;
   const [hotspot, setHotspot] = useState<Hotspot | null>(null);
   const [cleanup, setCleanup] = useState<Cleanup | null>(null);
+  const [photos, setPhotos] = useState<ReportPhoto[]>([]);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +35,7 @@ export default function HotspotDetailPage() {
       .then((data) => {
         setHotspot(data.hotspot || null);
         setCleanup(data.cleanup || null);
+        setPhotos(data.photos || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -79,37 +89,154 @@ export default function HotspotDetailPage() {
             </p>
           </div>
 
-          {/* Before / After images */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Report photo gallery */}
+          {photos.length > 0 ? (
             <div>
-              <p className="text-xs font-medium text-weathered mb-1.5">Before</p>
-              {hotspot.latest_before_image_url ? (
-                <img
-                  src={hotspot.latest_before_image_url}
-                  alt="Before cleanup"
-                  className="w-full h-40 object-cover rounded-xl"
-                />
-              ) : (
-                <div className="w-full h-40 bg-stone-100 rounded-xl flex items-center justify-center">
-                  <span className="text-xs text-stone-300">No photo yet</span>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-loam">Reported photos</h3>
+                <span className="text-xs text-stone-400">{photos.length} photo{photos.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 rounded-2xl overflow-hidden">
+                {photos.map((photo, idx) => (
+                  <button
+                    key={photo.id}
+                    onClick={() => setLightboxIdx(idx)}
+                    className="relative aspect-square group focus:outline-none"
+                  >
+                    <img
+                      src={photo.image_url}
+                      alt={`Report — ${photo.severity}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
+                      <div className="w-full px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                          photo.severity === 'bad'
+                            ? 'bg-red-500 text-white'
+                            : photo.severity === 'medium'
+                            ? 'bg-amber-400 text-amber-900'
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {photo.severity}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* After image if available */}
+              {hotspot.latest_after_image_url && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-weathered mb-1.5">After clean-up</p>
+                  <img
+                    src={hotspot.latest_after_image_url}
+                    alt="After cleanup"
+                    className="w-full h-40 object-cover rounded-xl"
+                  />
                 </div>
               )}
             </div>
-            <div>
-              <p className="text-xs font-medium text-weathered mb-1.5">After</p>
-              {hotspot.latest_after_image_url ? (
-                <img
-                  src={hotspot.latest_after_image_url}
-                  alt="After cleanup"
-                  className="w-full h-40 object-cover rounded-xl"
-                />
-              ) : (
-                <div className="w-full h-40 bg-stone-100 rounded-xl flex items-center justify-center">
-                  <span className="text-xs text-stone-300">Not yet cleared</span>
-                </div>
-              )}
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs font-medium text-weathered mb-1.5">Before</p>
+                {hotspot.latest_before_image_url ? (
+                  <img
+                    src={hotspot.latest_before_image_url}
+                    alt="Before cleanup"
+                    className="w-full h-40 object-cover rounded-xl"
+                  />
+                ) : (
+                  <div className="w-full h-40 bg-stone-100 rounded-xl flex items-center justify-center">
+                    <span className="text-xs text-stone-300">No photo yet</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-medium text-weathered mb-1.5">After</p>
+                {hotspot.latest_after_image_url ? (
+                  <img
+                    src={hotspot.latest_after_image_url}
+                    alt="After cleanup"
+                    className="w-full h-40 object-cover rounded-xl"
+                  />
+                ) : (
+                  <div className="w-full h-40 bg-stone-100 rounded-xl flex items-center justify-center">
+                    <span className="text-xs text-stone-300">Not yet cleared</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Lightbox */}
+          {lightboxIdx !== null && photos[lightboxIdx] && (
+            <div
+              className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+              onClick={() => setLightboxIdx(null)}
+            >
+              <button
+                onClick={() => setLightboxIdx(null)}
+                className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+              >
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Previous */}
+              {lightboxIdx > 0 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setLightboxIdx(lightboxIdx - 1); }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/30 rounded-full p-2"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Image */}
+              <img
+                src={photos[lightboxIdx].image_url}
+                alt={`Report — ${photos[lightboxIdx].severity}`}
+                className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              {/* Next */}
+              {lightboxIdx < photos.length - 1 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setLightboxIdx(lightboxIdx + 1); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/30 rounded-full p-2"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Info bar */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm rounded-xl px-4 py-2 flex items-center gap-3">
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  photos[lightboxIdx].severity === 'bad'
+                    ? 'bg-red-500 text-white'
+                    : photos[lightboxIdx].severity === 'medium'
+                    ? 'bg-amber-400 text-amber-900'
+                    : 'bg-green-100 text-green-700'
+                }`}>
+                  {photos[lightboxIdx].severity}
+                </span>
+                <span className="text-xs text-white/70">
+                  {formatDate(photos[lightboxIdx].submitted_at)}
+                </span>
+                <span className="text-xs text-white/50">
+                  {lightboxIdx + 1} / {photos.length}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Stats */}
           <Card>
