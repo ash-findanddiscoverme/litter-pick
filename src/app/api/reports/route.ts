@@ -90,6 +90,38 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Reverse-geocode coordinates to a short place name using Nominatim.
+ * Returns the road name, village/town, or nearest named place — or null on failure.
+ */
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'LitterPick/1.0 (https://litterpick.org)' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const addr = data.address;
+    if (!addr) return null;
+
+    // Prefer: road → village → suburb → town → city
+    const road = addr.road || addr.footway || addr.path || addr.cycleway;
+    const place = addr.village || addr.hamlet || addr.suburb || addr.town || addr.city;
+
+    if (road && place) return `${road}, ${place}`;
+    if (road) return road;
+    if (place) return place;
+    // Fallback to display_name trimmed to first two parts
+    if (data.display_name) {
+      return data.display_name.split(',').slice(0, 2).join(',').trim();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Simple hotspot recalculation:
  * Find nearby reports within HOTSPOT_RADIUS, and if enough exist,
  * create or update a hotspot.
@@ -148,6 +180,8 @@ async function recalculateHotspots(
   if (existingHotspots && existingHotspots.length > 0) {
     // Update existing hotspot
     const hotspot = existingHotspots[0];
+    // Reverse-geocode if area_name is still missing
+    const areaName = hotspot.area_name || await reverseGeocode(centroidLat, centroidLng);
     await supabase
       .from('hotspots')
       .update({
@@ -157,6 +191,7 @@ async function recalculateHotspots(
         centroid_longitude: centroidLng,
         latest_before_image_url: latestBeforeImage || hotspot.latest_before_image_url,
         updated_at: new Date().toISOString(),
+        ...(areaName && !hotspot.area_name ? { area_name: areaName } : {}),
       })
       .eq('id', hotspot.id);
 
@@ -171,7 +206,8 @@ async function recalculateHotspots(
         .in('id', reportIds);
     }
   } else {
-    // Create new hotspot
+    // Create new hotspot — reverse-geocode for a meaningful name
+    const newAreaName = await reverseGeocode(centroidLat, centroidLng);
     const { data: newHotspot } = await supabase
       .from('hotspots')
       .insert({
@@ -182,6 +218,7 @@ async function recalculateHotspots(
         report_count: nearbyReports.length,
         volunteer_interest_count: 0,
         latest_before_image_url: latestBeforeImage,
+        area_name: newAreaName,
       })
       .select()
       .single();

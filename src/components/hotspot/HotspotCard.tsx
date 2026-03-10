@@ -44,7 +44,7 @@ export default function HotspotCard({ hotspot }: HotspotCardProps) {
               <span>{hotspot.volunteer_interest_count} interested</span>
             </div>
             <p className="text-xs text-stone-300 mt-1">
-              Updated {formatDate(hotspot.updated_at)}
+              Updated {formatDate(hotspot.updated_at)} · <span className="font-mono">{hotspot.centroid_latitude.toFixed(4)}, {hotspot.centroid_longitude.toFixed(4)}</span>
             </p>
           </div>
         </div>

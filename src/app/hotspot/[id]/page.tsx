@@ -74,6 +74,9 @@ export default function HotspotDetailPage() {
             <p className="text-sm text-weathered mt-1">
               {hotspot.report_count} reports · Score: {hotspot.score} · Updated {formatDate(hotspot.updated_at)}
             </p>
+            <p className="text-xs text-stone-400 mt-1 font-mono">
+              {hotspot.centroid_latitude.toFixed(5)}, {hotspot.centroid_longitude.toFixed(5)}
+            </p>
           </div>
 
           {/* Before / After images */}
