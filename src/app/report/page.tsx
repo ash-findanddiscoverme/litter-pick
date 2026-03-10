@@ -198,7 +198,7 @@ export default function ReportPage() {
 
           {/* Step 2: Location */}
           {step === 'location' && (
-            <div className="flex flex-col gap-3" style={{ minHeight: 'calc(100vh - 8rem)' }}>
+            <div className="flex flex-col gap-3" style={{ minHeight: 'calc(100vh - 12rem)' }}>
               <div>
                 <h1 className="text-2xl font-bold text-loam">Where is it?</h1>
                 <p className="text-sm text-weathered mt-1">
@@ -260,7 +260,7 @@ export default function ReportPage() {
                 initialCenter={longitude && latitude ? [longitude, latitude] : DEFAULT_CENTER}
                 initialZoom={longitude && latitude ? 15 : DEFAULT_ZOOM}
                 onLocationSelect={handleLocationSelect}
-                className="flex-1 min-h-[50vh]"
+                className="flex-1 min-h-[200px] sm:min-h-[300px]"
               />
 
               {latitude && longitude ? (
