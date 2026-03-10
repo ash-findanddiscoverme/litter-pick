@@ -1,12 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import maplibregl from 'maplibre-gl';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { formatPickDate } from '@/lib/utils';
+import { MAP_STYLE_URL } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import type { PickWithDetails } from '@/types/database';
+
+/** Tiny non-interactive map for pick cards */
+function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string | null }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const key = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: MAP_STYLE_URL + key,
+      center: [lng, lat],
+      zoom: 14,
+      interactive: false,
+      attributionControl: false,
+    });
+
+    new maplibregl.Marker({ color: '#4AA853' })
+      .setLngLat([lng, lat])
+      .addTo(map);
+
+    return () => { map.remove(); };
+  }, [lat, lng]);
+
+  return (
+    <div className="rounded-xl overflow-hidden bg-stone-100" style={{ height: 128 }}>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
+}
 
 interface PickCardProps {
   pick: PickWithDetails;
@@ -98,13 +130,8 @@ export default function PickCard({ pick }: PickCardProps) {
         {/* Mini map + directions */}
         {pick.hotspot_lat && pick.hotspot_lng && (
           <div className="space-y-2">
-            <div className="rounded-xl overflow-hidden">
-              <img
-                src={`https://api.maptiler.com/maps/streets-v2/static/${pick.hotspot_lng},${pick.hotspot_lat},14/600x200@2x.png?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}&markers=${pick.hotspot_lng},${pick.hotspot_lat},%234AA853`}
-                alt={`Map showing ${pick.hotspot_name || 'pick location'}`}
-                className="w-full h-32 object-cover"
-              />
-            </div>
+            <MiniMap lat={pick.hotspot_lat} lng={pick.hotspot_lng} name={pick.hotspot_name} />
+
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${pick.hotspot_lat},${pick.hotspot_lng}`}
               target="_blank"

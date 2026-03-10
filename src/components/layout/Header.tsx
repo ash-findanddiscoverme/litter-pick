@@ -7,12 +7,14 @@ import Button from '@/components/ui/Button';
 
 export default function Header() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user ? { id: data.user.id, email: data.user.email ?? undefined } : null);
+      setAuthChecked(true);
     });
   }, []);
 
@@ -41,19 +43,21 @@ export default function Header() {
           <Link href="/picks" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
             Pick
           </Link>
-          {user ? (
-            <Link href="/profile">
-              <Button variant="secondary" size="sm">Profile</Button>
-            </Link>
-          ) : (
-            <div className="flex items-center gap-2.5 ml-2">
-              <Link href="/volunteer">
-                <Button size="sm">Volunteer</Button>
+          {authChecked && (
+            user ? (
+              <Link href="/profile">
+                <Button variant="secondary" size="sm">Profile</Button>
               </Link>
-              <Link href="/login">
-                <Button variant="outline" size="sm">Log in</Button>
-              </Link>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2.5 ml-2">
+                <Link href="/volunteer">
+                  <Button size="sm">Volunteer</Button>
+                </Link>
+                <Link href="/login">
+                  <Button variant="outline" size="sm">Log in</Button>
+                </Link>
+              </div>
+            )
           )}
         </nav>
 
@@ -85,19 +89,21 @@ export default function Header() {
           <Link href="/picks" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
             Pick
           </Link>
-          {user ? (
-            <Link href="/profile" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
-              My profile
-            </Link>
-          ) : (
-            <>
-              <Link href="/volunteer" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
-                Volunteer
+          {authChecked && (
+            user ? (
+              <Link href="/profile" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
+                My profile
               </Link>
-              <Link href="/login" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
-                Log in
-              </Link>
-            </>
+            ) : (
+              <>
+                <Link href="/volunteer" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
+                  Volunteer
+                </Link>
+                <Link href="/login" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
+                  Log in
+                </Link>
+              </>
+            )
           )}
         </div>
       )}
