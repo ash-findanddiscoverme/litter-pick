@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { sendEmail } from '@/lib/email';
+import { welcomeEmail } from '@/lib/email-templates';
 
 export const runtime = 'edge';
 
@@ -48,6 +50,12 @@ export async function POST(request: NextRequest) {
       await supabase.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
     }
+
+    // Send welcome email (fire-and-forget — don't block signup on email delivery)
+    const welcome = welcomeEmail(first_name);
+    sendEmail({ to: email, ...welcome }).catch((err) =>
+      console.error('[volunteers] Welcome email failed:', err)
+    );
 
     // Client will sign in separately after receiving success
     return NextResponse.json({ user: { id: authData.user.id, email } }, { status: 201 });
