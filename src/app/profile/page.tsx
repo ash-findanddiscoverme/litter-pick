@@ -75,6 +75,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profileMapRef = useRef<HeatMapHandle>(null);
   const router = useRouter();
@@ -111,6 +112,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     loadProfile();
+    fetch('/api/admin/check')
+      .then((r) => r.json())
+      .then((data) => setIsAdmin(data.isAdmin === true))
+      .catch(() => {});
   }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fit the profile map to show the full volunteer circle
@@ -288,7 +293,7 @@ export default function ProfilePage() {
             </button>
             <h1 className="text-2xl font-bold text-loam">{profile.user.first_name || 'Volunteer'}</h1>
             <p className="text-sm text-weathered mt-1">
-              {volunteerTypeLabels[profile.user.volunteer_type] || 'Volunteer'}{profile.user.postcode_or_town ? ` · ${profile.user.postcode_or_town}` : ''}
+              {volunteerTypeLabels[profile.user.volunteer_type] || 'Volunteer'}{isAdmin ? ' & Admin' : ''}{profile.user.postcode_or_town ? ` · ${profile.user.postcode_or_town}` : ''}
             </p>
           </div>
 

@@ -100,7 +100,7 @@ export default function PickCard({ pick }: PickCardProps) {
           <div className="space-y-2">
             <div className="rounded-xl overflow-hidden">
               <img
-                src={`https://api.maptiler.com/maps/streets-v2/static/${pick.hotspot_lng},${pick.hotspot_lat},14/600x200@2x.png?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}&markers=${pick.hotspot_lng},${pick.hotspot_lat},#4AA853`}
+                src={`https://api.maptiler.com/maps/streets-v2/static/${pick.hotspot_lng},${pick.hotspot_lat},14/600x200@2x.png?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}&markers=${pick.hotspot_lng},${pick.hotspot_lat},%234AA853`}
                 alt={`Map showing ${pick.hotspot_name || 'pick location'}`}
                 className="w-full h-32 object-cover"
               />

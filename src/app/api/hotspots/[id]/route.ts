@@ -1,7 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceRoleClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/admin';
 
 export const runtime = 'edge';
+
+/** PATCH /api/hotspots/[id] — rename a hotspot (admin only) */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user || !isAdminEmail(user.email)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { area_name } = body;
+
+    if (typeof area_name !== 'string' || area_name.trim().length === 0) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    const serviceClient = createServiceRoleClient();
+    const { error } = await serviceClient
+      .from('hotspots')
+      .update({ area_name: area_name.trim() })
+      .eq('id', params.id);
+
+    if (error) {
+      console.error('Rename hotspot error:', error);
+      return NextResponse.json({ error: 'Failed to rename' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, area_name: area_name.trim() });
+  } catch (err) {
+    console.error('Hotspot PATCH error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
 
 export async function GET(
   _request: NextRequest,

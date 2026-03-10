@@ -325,13 +325,12 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
   }, [radiusCircle, mapLoaded]);
 
   return (
-    <div className={className || 'relative'} style={{ minHeight: 200 }}>
+    <div className={`relative ${className || ''}`} style={{ minHeight: 200 }}>
       {/* MapLibre forcibly sets position:relative on its container, so we cannot
-          use absolute positioning on it. Use explicit width/height: 100% instead. */}
+          use absolute positioning on it. Use absolute fill instead. */}
       <div
         ref={mapContainer}
-        className="rounded-2xl overflow-hidden"
-        style={{ width: '100%', height: '100%' }}
+        className="absolute inset-0 rounded-2xl overflow-hidden"
       />
       {pickMode && (
         <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 text-xs font-medium text-weathered shadow-sm">

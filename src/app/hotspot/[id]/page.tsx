@@ -29,6 +29,13 @@ export default function HotspotDetailPage() {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Admin state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null);
+
   useEffect(() => {
     fetch(`/api/hotspots/${id}`)
       .then((r) => r.json())
@@ -39,7 +46,55 @@ export default function HotspotDetailPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    // Check admin status
+    fetch('/api/admin/check')
+      .then((r) => r.json())
+      .then((data) => setIsAdmin(data.isAdmin === true))
+      .catch(() => {});
   }, [id]);
+
+  const handleRename = async () => {
+    if (!nameInput.trim() || !hotspot) return;
+    setSavingName(true);
+    try {
+      const res = await fetch(`/api/hotspots/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ area_name: nameInput.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHotspot({ ...hotspot, area_name: data.area_name });
+        setEditingName(false);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!confirm('Delete this photo? This cannot be undone.')) return;
+    setDeletingPhotoId(photoId);
+    try {
+      const res = await fetch(`/api/admin/reports/${photoId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+        if (lightboxIdx !== null) {
+          setLightboxIdx(null);
+        }
+        if (hotspot) {
+          setHotspot({ ...hotspot, report_count: Math.max(0, hotspot.report_count - 1) });
+        }
+      }
+    } catch {
+      // ignore
+    } finally {
+      setDeletingPhotoId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -78,9 +133,48 @@ export default function HotspotDetailPage() {
             <Badge className={hotspotStatusColor(hotspot.status)}>
               {hotspotStatusLabel(hotspot.status)}
             </Badge>
-            <h1 className="text-2xl font-bold text-loam mt-2">
-              {hotspot.area_name || 'Litter hotspot'}
-            </h1>
+            {editingName ? (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  className="flex-1 px-3 py-1.5 text-lg font-bold text-loam border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setEditingName(false); }}
+                />
+                <button
+                  onClick={handleRename}
+                  disabled={savingName}
+                  className="px-3 py-1.5 bg-brand-500 text-white text-sm font-medium rounded-lg hover:bg-brand-600 disabled:opacity-50"
+                >
+                  {savingName ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setEditingName(false)}
+                  className="px-3 py-1.5 bg-stone-100 text-stone-500 text-sm font-medium rounded-lg hover:bg-stone-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-2">
+                <h1 className="text-2xl font-bold text-loam">
+                  {hotspot.area_name || 'Litter hotspot'}
+                </h1>
+                {isAdmin && (
+                  <button
+                    onClick={() => { setNameInput(hotspot.area_name || ''); setEditingName(true); }}
+                    className="text-stone-300 hover:text-brand-500 transition-colors"
+                    title="Edit name"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
             <p className="text-sm text-weathered mt-1">
               {hotspot.report_count} reports · Score: {hotspot.score} · Updated {formatDate(hotspot.updated_at)}
             </p>
@@ -98,30 +192,50 @@ export default function HotspotDetailPage() {
               </div>
               <div className="grid grid-cols-3 gap-1.5 rounded-2xl overflow-hidden">
                 {photos.map((photo, idx) => (
-                  <button
-                    key={photo.id}
-                    onClick={() => setLightboxIdx(idx)}
-                    className="relative aspect-square group focus:outline-none"
-                  >
-                    <img
-                      src={photo.image_url}
-                      alt={`Report — ${photo.severity}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
-                      <div className="w-full px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                          photo.severity === 'bad'
-                            ? 'bg-red-500 text-white'
-                            : photo.severity === 'medium'
-                            ? 'bg-amber-400 text-amber-900'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {photo.severity}
-                        </span>
+                  <div key={photo.id} className="relative aspect-square group">
+                    <button
+                      onClick={() => setLightboxIdx(idx)}
+                      className="w-full h-full focus:outline-none"
+                    >
+                      <img
+                        src={photo.image_url}
+                        alt={`Report — ${photo.severity}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end">
+                        <div className="w-full px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                            photo.severity === 'bad'
+                              ? 'bg-red-500 text-white'
+                              : photo.severity === 'medium'
+                              ? 'bg-amber-400 text-amber-900'
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {photo.severity}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeletePhoto(photo.id)}
+                        disabled={deletingPhotoId === photo.id}
+                        className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        title="Delete photo"
+                      >
+                        {deletingPhotoId === photo.id ? (
+                          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                          </svg>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
 
@@ -234,6 +348,17 @@ export default function HotspotDetailPage() {
                 <span className="text-xs text-white/50">
                   {lightboxIdx + 1} / {photos.length}
                 </span>
+                {isAdmin && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photos[lightboxIdx].id); }}
+                    className="text-red-400 hover:text-red-300 transition-colors ml-1"
+                    title="Delete photo"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           )}
