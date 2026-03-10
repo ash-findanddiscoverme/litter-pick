@@ -42,7 +42,7 @@ export default function PicksPage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-loam">Litter picks</h1>
+              <h1 className="text-2xl font-bold text-loam">Join a Litter Pick</h1>
               <p className="text-sm text-weathered mt-0.5">Join a pick or organise your own</p>
             </div>
             <Link href="/picks/new">
