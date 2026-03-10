@@ -1,6 +1,6 @@
 // Oxfordshire centre coordinates
 export const DEFAULT_CENTER: [number, number] = [-1.2577, 51.7520]; // [lng, lat]
-export const DEFAULT_ZOOM = 10;
+export const DEFAULT_ZOOM = 9;
 
 // Hotspot configuration
 export const HOTSPOT_RADIUS_KM = 0.3; // 300m radius for clustering reports

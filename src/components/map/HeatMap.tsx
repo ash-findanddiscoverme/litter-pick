@@ -199,6 +199,18 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
       }
     });
 
+    // Click-to-zoom: when clicking the map (not on a hotspot), ease in
+    map.on('click', (e) => {
+      // Skip if a hotspot point was clicked (already handled above)
+      const features = map.queryRenderedFeatures(e.point, { layers: ['hotspot-point'] });
+      if (features.length > 0) return;
+      // Only zoom in if currently zoomed out
+      const currentZoom = map.getZoom();
+      if (currentZoom < 14) {
+        map.flyTo({ center: e.lngLat, zoom: Math.min(currentZoom + 2, 14), duration: 1000 });
+      }
+    });
+
     map.on('mouseenter', 'hotspot-point', () => {
       map.getCanvas().style.cursor = 'pointer';
     });
