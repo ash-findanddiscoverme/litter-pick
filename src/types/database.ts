@@ -7,6 +7,7 @@ export type VolunteerType = 'solo' | 'group' | 'organise';
 export type InterestType = 'help' | 'join' | 'organise';
 export type CleanupStatus = 'forming' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type PhotoType = 'before' | 'after';
+export type EquipmentStatus = 'own' | 'dont_need' | 'borrow';
 
 export interface Report {
   id: string;
@@ -48,6 +49,10 @@ export interface User {
   volunteer_lat: number | null;
   volunteer_lng: number | null;
   volunteer_radius_km: number | null;
+  equipment_bags: EquipmentStatus | null;
+  equipment_bag_hoop: EquipmentStatus | null;
+  equipment_gloves: EquipmentStatus | null;
+  equipment_litter_picker: EquipmentStatus | null;
   created_at: string;
 }
 

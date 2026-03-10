@@ -14,6 +14,18 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Litter Pick',
   },
+  openGraph: {
+    siteName: 'Litter Pick',
+    type: 'website',
+    title: 'Litter Pick — Care for your corner.',
+    description: 'Report litter, find local hotspots, and join picks near you. A simpler way to look after where you live.',
+    url: 'https://litter-pick.com',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Litter Pick — Care for your corner.',
+    description: 'Report litter, find local hotspots, and join picks near you. A simpler way to look after where you live.',
+  },
 };
 
 export const viewport: Viewport = {

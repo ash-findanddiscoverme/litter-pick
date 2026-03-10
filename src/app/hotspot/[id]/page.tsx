@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import VolunteerInterestButton from '@/components/hotspot/VolunteerInterestButton';
+import ShareButton from '@/components/ui/ShareButton';
 import { hotspotStatusLabel, hotspotStatusColor, formatDate, formatPickDate } from '@/lib/utils';
 import type { Hotspot, Cleanup } from '@/types/database';
 
@@ -198,6 +199,13 @@ export default function HotspotDetailPage() {
             <p className="text-xs text-stone-400 mt-1 font-mono">
               {hotspot.centroid_latitude.toFixed(5)}, {hotspot.centroid_longitude.toFixed(5)}
             </p>
+            <div className="mt-2">
+              <ShareButton
+                url={`https://litter-pick.com/hotspot/${id}`}
+                title={`${hotspot.area_name || 'Litter hotspot'} - Litter Hotspot`}
+                text={`Join a litter pick at ${hotspot.area_name || 'this hotspot'}. Help clear the area, team up with locals, and make your community cleaner.`}
+              />
+            </div>
           </div>
 
           {/* Report photo gallery */}

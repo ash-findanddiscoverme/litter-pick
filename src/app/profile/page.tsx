@@ -10,7 +10,8 @@ import Button from '@/components/ui/Button';
 import HeatMap from '@/components/map/HeatMap';
 import type { HeatMapHandle } from '@/components/map/HeatMap';
 import { createClient } from '@/lib/supabase/client';
-import type { User } from '@/types/database';
+import EquipmentSection from '@/components/profile/EquipmentSection';
+import type { User, EquipmentStatus } from '@/types/database';
 
 interface ReportPhoto {
   id: string;
@@ -353,6 +354,25 @@ export default function ProfilePage() {
                 />
               </div>
             ) : null}
+          </Card>
+
+          {/* Equipment */}
+          <Card>
+            <h3 className="text-sm font-semibold text-loam mb-3">My kit</h3>
+            <EquipmentSection
+              equipment={{
+                equipment_bags: (profile.user.equipment_bags as EquipmentStatus) || null,
+                equipment_bag_hoop: (profile.user.equipment_bag_hoop as EquipmentStatus) || null,
+                equipment_gloves: (profile.user.equipment_gloves as EquipmentStatus) || null,
+                equipment_litter_picker: (profile.user.equipment_litter_picker as EquipmentStatus) || null,
+              }}
+              onChange={(updated) => {
+                setProfile({
+                  ...profile,
+                  user: { ...profile.user, ...updated },
+                });
+              }}
+            />
           </Card>
 
           {/* Report photos */}

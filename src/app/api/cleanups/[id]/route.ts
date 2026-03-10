@@ -40,7 +40,7 @@ export async function GET(
     }
 
     // Fetch volunteers who expressed interest in this hotspot
-    let volunteers: { id: string; first_name: string; avatar_url: string | null; interest_type: string }[] = [];
+    let volunteers: { id: string; first_name: string; avatar_url: string | null; interest_type: string; equipment_bags: string | null; equipment_bag_hoop: string | null; equipment_gloves: string | null; equipment_litter_picker: string | null }[] = [];
     if (cleanup.hotspot_id) {
       const { data: interests } = await supabase
         .from('volunteer_interests')
@@ -51,16 +51,20 @@ export async function GET(
         const userIds = interests.map((i: { user_id: string }) => i.user_id);
         const { data: users } = await supabase
           .from('users')
-          .select('id, first_name, avatar_url')
+          .select('id, first_name, avatar_url, equipment_bags, equipment_bag_hoop, equipment_gloves, equipment_litter_picker')
           .in('id', userIds);
 
         if (users) {
           const interestMap = new Map(interests.map((i: { user_id: string; interest_type: string }) => [i.user_id, i.interest_type]));
-          volunteers = users.map((u: { id: string; first_name: string; avatar_url: string | null }) => ({
+          volunteers = users.map((u: { id: string; first_name: string; avatar_url: string | null; equipment_bags: string | null; equipment_bag_hoop: string | null; equipment_gloves: string | null; equipment_litter_picker: string | null }) => ({
             id: u.id,
             first_name: u.first_name,
             avatar_url: u.avatar_url,
             interest_type: interestMap.get(u.id) || 'join',
+            equipment_bags: u.equipment_bags,
+            equipment_bag_hoop: u.equipment_bag_hoop,
+            equipment_gloves: u.equipment_gloves,
+            equipment_litter_picker: u.equipment_litter_picker,
           }));
         }
       }

@@ -16,6 +16,8 @@ import { compressImage } from '@/lib/image';
 import { MAP_STYLE_URL } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import CouncilSection from '@/components/picks/CouncilSection';
+import ShareButton from '@/components/ui/ShareButton';
+import { EquipmentIcons } from '@/components/profile/EquipmentSection';
 import type { Cleanup, Hotspot } from '@/types/database';
 
 export const runtime = 'edge';
@@ -25,6 +27,10 @@ interface Volunteer {
   first_name: string;
   avatar_url: string | null;
   interest_type: string;
+  equipment_bags: string | null;
+  equipment_bag_hoop: string | null;
+  equipment_gloves: string | null;
+  equipment_litter_picker: string | null;
 }
 
 interface Organiser {
@@ -241,6 +247,13 @@ export default function CleanupPage() {
                     })}
                   </p>
                 )}
+                <div className="mt-2">
+                  <ShareButton
+                    url={`https://litter-pick.com/pick/${id}`}
+                    title={`Litter Pick ${hotspot?.area_name || ''}`}
+                    text={`Join the litter pick at ${hotspot?.area_name || 'this location'}. Help clean up your community.`}
+                  />
+                </div>
               </div>
 
               {/* Map */}
@@ -338,12 +351,18 @@ export default function CleanupPage() {
                             </span>
                           </div>
                         )}
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-loam">{v.first_name}</p>
                           {v.interest_type === 'organise' && (
                             <p className="text-[11px] text-brand-500">Organiser</p>
                           )}
                         </div>
+                        <EquipmentIcons equipment={{
+                          equipment_bags: v.equipment_bags,
+                          equipment_bag_hoop: v.equipment_bag_hoop,
+                          equipment_gloves: v.equipment_gloves,
+                          equipment_litter_picker: v.equipment_litter_picker,
+                        }} />
                       </div>
                     ))}
                   </div>
