@@ -8,6 +8,7 @@ export type InterestType = 'help' | 'join' | 'organise';
 export type CleanupStatus = 'forming' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type PhotoType = 'before' | 'after';
 export type EquipmentStatus = 'own' | 'dont_need' | 'borrow';
+export type UserStatus = 'active' | 'warned' | 'banned';
 
 export interface Report {
   id: string;
@@ -53,6 +54,11 @@ export interface User {
   equipment_bag_hoop: EquipmentStatus | null;
   equipment_gloves: EquipmentStatus | null;
   equipment_litter_picker: EquipmentStatus | null;
+  status: UserStatus;
+  warn_reason: string | null;
+  ban_reason: string | null;
+  warned_at: string | null;
+  banned_at: string | null;
   created_at: string;
 }
 
