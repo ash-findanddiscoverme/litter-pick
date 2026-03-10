@@ -86,6 +86,7 @@ export default function PickCard({ pick }: PickCardProps) {
   };
 
   return (
+    <a href={`/cleanup/${pick.id}`} className="block">
     <Card>
       <div className="space-y-3">
         {/* Organiser */}
@@ -136,6 +137,7 @@ export default function PickCard({ pick }: PickCardProps) {
               href={`https://www.google.com/maps/dir/?api=1&destination=${pick.hotspot_lat},${pick.hotspot_lng}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-stone-50 hover:bg-stone-100 rounded-xl text-sm font-medium text-loam transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -163,7 +165,7 @@ export default function PickCard({ pick }: PickCardProps) {
               Joined
             </span>
           ) : (
-            <Button size="sm" onClick={handleJoin} disabled={joining}>
+            <Button size="sm" onClick={(e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); handleJoin(); }} disabled={joining}>
               {joining ? 'Joining...' : 'Join'}
             </Button>
           )}
@@ -174,5 +176,6 @@ export default function PickCard({ pick }: PickCardProps) {
         )}
       </div>
     </Card>
+    </a>
   );
 }
