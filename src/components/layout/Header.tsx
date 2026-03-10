@@ -43,6 +43,9 @@ export default function Header() {
           <Link href="/picks" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
             Pick
           </Link>
+          <Link href="/guides" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
+            Guides
+          </Link>
           {authChecked && (
             user ? (
               <Link href="/profile">
@@ -88,6 +91,9 @@ export default function Header() {
           </Link>
           <Link href="/picks" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
             Pick
+          </Link>
+          <Link href="/guides" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
+            Guides
           </Link>
           {authChecked && (
             user ? (

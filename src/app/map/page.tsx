@@ -124,7 +124,7 @@ export default function MapPage() {
             ref={mapRef}
             hotspots={hotspots}
             onHotspotClick={handleHotspotClick}
-            className="w-full h-full"
+            className="absolute inset-0"
           />
 
           {/* Search bar */}
