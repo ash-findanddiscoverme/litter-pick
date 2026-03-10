@@ -14,6 +14,8 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import { compressImage } from '@/lib/image';
 import { MAP_STYLE_URL } from '@/lib/constants';
+import { createClient } from '@/lib/supabase/client';
+import CouncilSection from '@/components/picks/CouncilSection';
 import type { Cleanup, Hotspot } from '@/types/database';
 
 export const runtime = 'edge';
@@ -72,6 +74,7 @@ export default function CleanupPage() {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>('info');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Completion form
   const [photo, setPhoto] = useState<File | null>(null);
@@ -93,15 +96,38 @@ export default function CleanupPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    // Get current user for organiser check
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id || null);
+    });
   }, [id]);
 
   // Dynamic page title and meta description
   useEffect(() => {
-    if (!hotspot) return;
-    const name = hotspot.area_name || 'Litter Pick';
+    if (!hotspot || !cleanup) return;
+    const name = hotspot.area_name || 'Litter hotspot';
     const coords = `${hotspot.centroid_latitude.toFixed(5)}, ${hotspot.centroid_longitude.toFixed(5)}`;
 
-    document.title = `${name} - Litter Pick`;
+    // Format date as "Saturday 21 March 2026, 11:15am"
+    let dateStr = '';
+    if (cleanup.proposed_time) {
+      const d = new Date(cleanup.proposed_time);
+      const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
+      const day = d.getDate();
+      const month = d.toLocaleDateString('en-GB', { month: 'long' });
+      const year = d.getFullYear();
+      const hours = d.getHours();
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      const h12 = hours % 12 || 12;
+      dateStr = `${weekday} ${day} ${month} ${year}, ${h12}:${minutes}${ampm}`;
+    }
+
+    document.title = dateStr
+      ? `Litter Pick ${name} | ${dateStr}`
+      : `Litter Pick ${name}`;
 
     let metaDesc = document.querySelector('meta[name="description"]');
     if (!metaDesc) {
@@ -110,7 +136,7 @@ export default function CleanupPage() {
       document.head.appendChild(metaDesc);
     }
     metaDesc.setAttribute('content', `Join a litter pick at ${name} (${coords}). Help clear the area, team up with locals, and make your community cleaner.`);
-  }, [hotspot]);
+  }, [hotspot, cleanup]);
 
   const handlePhoto = useCallback(async (file: File) => {
     const compressed = await compressImage(file);
@@ -279,6 +305,15 @@ export default function CleanupPage() {
                     <p className="text-sm font-medium text-loam">{organiser.first_name}</p>
                   </div>
                 </Card>
+              )}
+
+              {/* Council collection */}
+              {hotspot && (
+                <CouncilSection
+                  cleanup={cleanup}
+                  hotspot={hotspot}
+                  isOrganiser={!!currentUserId && currentUserId === organiser?.id}
+                />
               )}
 
               {/* Volunteers */}

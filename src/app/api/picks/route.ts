@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     // Fetch scheduled cleanups with proposed_time in the future
     let query = serviceClient
       .from('cleanups')
-      .select('id, hotspot_id, organiser_user_id, proposed_time, volunteer_count, notes, status')
+      .select('id, hotspot_id, organiser_user_id, proposed_time, volunteer_count, notes, status, council_notified, council_collection_confirmed')
       .eq('status', 'scheduled')
       .not('proposed_time', 'is', null)
       .gte('proposed_time', new Date().toISOString())
@@ -70,6 +70,8 @@ export async function GET(request: NextRequest) {
         volunteer_count: p.volunteer_count,
         notes: p.notes,
         status: p.status,
+        council_notified: p.council_notified ?? false,
+        council_collection_confirmed: p.council_collection_confirmed ?? false,
       };
     });
 

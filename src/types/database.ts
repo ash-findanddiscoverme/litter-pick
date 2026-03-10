@@ -69,6 +69,8 @@ export interface Cleanup {
   volunteer_count: number;
   bags_collected: number | null;
   notes: string | null;
+  council_notified?: boolean | null;
+  council_collection_confirmed?: boolean | null;
 }
 
 export interface CleanupPhoto {
@@ -111,6 +113,8 @@ export interface PickWithDetails {
   volunteer_count: number;
   notes: string | null;
   status: CleanupStatus;
+  council_notified?: boolean | null;
+  council_collection_confirmed?: boolean | null;
 }
 
 export interface CleanupCompletionInput {
