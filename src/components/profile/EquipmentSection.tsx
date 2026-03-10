@@ -136,23 +136,23 @@ export default function EquipmentSection({ equipment, onChange }: Props) {
   );
 }
 
-/** Compact equipment icons for volunteer lists */
+/** Equipment icons for volunteer lists — shows labelled pills */
 export function EquipmentIcons({ equipment }: { equipment: Record<string, string | null | undefined> }) {
   const items: { key: string; label: string; icon: JSX.Element }[] = [
     {
       key: 'equipment_bags',
       label: 'Bags',
       icon: (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
         </svg>
       ),
     },
     {
       key: 'equipment_bag_hoop',
-      label: 'Bag hoop',
+      label: 'Hoop',
       icon: (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <circle cx="12" cy="12" r="8" />
           <path strokeLinecap="round" d="M12 4v2m0 12v2" />
         </svg>
@@ -162,16 +162,16 @@ export function EquipmentIcons({ equipment }: { equipment: Record<string, string
       key: 'equipment_gloves',
       label: 'Gloves',
       icon: (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M10.05 4.575a1.575 1.575 0 10-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 013.15 0v1.5m-3.15 0l.075 5.925m3.075-5.925v3m0-3a1.575 1.575 0 013.15 0v3m-3.15 0v3.375c0 .621.504 1.125 1.125 1.125h.75m-6.375-7.5v3.375c0 .621-.504 1.125-1.125 1.125h-.75M6.9 7.575V12m0 0v4.125c0 1.036.84 1.875 1.875 1.875h6.45c1.035 0 1.875-.84 1.875-1.875V12M6.9 12h10.2" />
         </svg>
       ),
     },
     {
       key: 'equipment_litter_picker',
-      label: 'Litter picker',
+      label: 'Picker',
       icon: (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 3.75L6 6l1.5 2.25M16.5 3.75L18 6l-1.5 2.25M12 3v18m0 0l-3-2m3 2l3-2" />
         </svg>
       ),
@@ -187,19 +187,68 @@ export function EquipmentIcons({ equipment }: { equipment: Record<string, string
   if (relevant.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap gap-1.5">
       {relevant.map(({ key, label, icon }) => {
         const isOwn = equipment[key] === 'own';
         return (
           <span
             key={key}
             title={`${label}: ${isOwn ? 'Has own' : 'Needs to borrow'}`}
-            className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
-              isOwn ? 'bg-brand-50 text-brand-500' : 'bg-red-50 text-red-400'
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+              isOwn
+                ? 'bg-brand-50 text-brand-600'
+                : 'bg-red-50 text-red-500'
             }`}
           >
             {icon}
+            {label}
           </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Aggregate equipment summary across all volunteers for a pick */
+export function EquipmentSummary({ volunteers }: { volunteers: { first_name: string; equipment_bags: string | null; equipment_bag_hoop: string | null; equipment_gloves: string | null; equipment_litter_picker: string | null }[] }) {
+  const items: { key: string; label: string }[] = [
+    { key: 'equipment_bags', label: 'Bags' },
+    { key: 'equipment_bag_hoop', label: 'Bag hoop' },
+    { key: 'equipment_gloves', label: 'Gloves' },
+    { key: 'equipment_litter_picker', label: 'Litter picker' },
+  ];
+
+  // Count how many people have each item and how many need to borrow
+  const counts = items.map(({ key, label }) => {
+    let have = 0;
+    let need = 0;
+    for (const v of volunteers) {
+      const val = (v as Record<string, string | null>)[key];
+      if (val === 'own') have++;
+      if (val === 'borrow') need++;
+    }
+    return { key, label, have, need };
+  });
+
+  const hasAnyData = counts.some(c => c.have > 0 || c.need > 0);
+  if (!hasAnyData) return null;
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {counts.map(({ key, label, have, need }) => {
+        if (have === 0 && need === 0) return null;
+        return (
+          <div key={key} className="flex items-center justify-between bg-stone-50 rounded-lg px-3 py-2">
+            <span className="text-xs font-medium text-loam">{label}</span>
+            <div className="flex items-center gap-2">
+              {have > 0 && (
+                <span className="text-[11px] font-medium text-brand-600">{have} has</span>
+              )}
+              {need > 0 && (
+                <span className="text-[11px] font-medium text-red-500">{need} needs</span>
+              )}
+            </div>
+          </div>
         );
       })}
     </div>

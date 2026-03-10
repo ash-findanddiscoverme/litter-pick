@@ -17,7 +17,7 @@ import { MAP_STYLE_URL } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import CouncilSection from '@/components/picks/CouncilSection';
 import ShareButton from '@/components/ui/ShareButton';
-import { EquipmentIcons } from '@/components/profile/EquipmentSection';
+import { EquipmentIcons, EquipmentSummary } from '@/components/profile/EquipmentSection';
 import type { Cleanup, Hotspot } from '@/types/database';
 
 export const runtime = 'edge';
@@ -335,37 +335,49 @@ export default function CleanupPage() {
                   <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">
                     Who&apos;s joining ({volunteers.length})
                   </h3>
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {volunteers.map((v) => (
-                      <div key={v.id} className="flex items-center gap-3">
+                      <div key={v.id} className="flex gap-3">
                         {v.avatar_url ? (
                           <img
                             src={v.avatar_url}
                             alt={v.first_name}
-                            className="w-8 h-8 rounded-full object-cover"
+                            className="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5"
                           />
                         ) : (
-                          <div className="w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center">
+                          <div className="w-9 h-9 bg-stone-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                             <span className="text-xs font-bold text-stone-400">
                               {v.first_name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-loam">{v.first_name}</p>
-                          {v.interest_type === 'organise' && (
-                            <p className="text-[11px] text-brand-500">Organiser</p>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-loam">{v.first_name}</p>
+                            {v.interest_type === 'organise' && (
+                              <span className="text-[11px] text-brand-500 font-medium">Organiser</span>
+                            )}
+                          </div>
+                          <EquipmentIcons equipment={{
+                            equipment_bags: v.equipment_bags,
+                            equipment_bag_hoop: v.equipment_bag_hoop,
+                            equipment_gloves: v.equipment_gloves,
+                            equipment_litter_picker: v.equipment_litter_picker,
+                          }} />
                         </div>
-                        <EquipmentIcons equipment={{
-                          equipment_bags: v.equipment_bags,
-                          equipment_bag_hoop: v.equipment_bag_hoop,
-                          equipment_gloves: v.equipment_gloves,
-                          equipment_litter_picker: v.equipment_litter_picker,
-                        }} />
                       </div>
                     ))}
                   </div>
+                </Card>
+              )}
+
+              {/* Equipment overview */}
+              {volunteers.length > 0 && (
+                <Card>
+                  <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">
+                    Equipment
+                  </h3>
+                  <EquipmentSummary volunteers={volunteers} />
                 </Card>
               )}
 
