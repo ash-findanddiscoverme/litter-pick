@@ -227,25 +227,38 @@ export function EquipmentSummary({ volunteers }: { volunteers: { first_name: str
       if (val === 'own') have++;
       if (val === 'borrow') need++;
     }
-    return { key, label, have, need };
+    return { key, label, have, need, total: have + need };
   });
 
   const hasAnyData = counts.some(c => c.have > 0 || c.need > 0);
   if (!hasAnyData) return null;
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {counts.map(({ key, label, have, need }) => {
-        if (have === 0 && need === 0) return null;
+    <div className="space-y-2">
+      {counts.map(({ key, label, have, need, total }) => {
+        if (total === 0) return null;
         return (
-          <div key={key} className="flex items-center justify-between bg-stone-50 rounded-lg px-3 py-2">
-            <span className="text-xs font-medium text-loam">{label}</span>
-            <div className="flex items-center gap-2">
+          <div key={key} className="bg-stone-50 rounded-lg px-3 py-2.5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-loam">{label}</span>
+              <span className="text-xs text-stone-400">{total} volunteer{total !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex items-center gap-4">
               {have > 0 && (
-                <span className="text-[11px] font-medium text-brand-600">{have} has</span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-600">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  {have} confirmed
+                </span>
               )}
               {need > 0 && (
-                <span className="text-[11px] font-medium text-red-500">{need} needs</span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-red-500">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
+                  {need} requested
+                </span>
               )}
             </div>
           </div>
