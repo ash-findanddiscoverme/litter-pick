@@ -24,11 +24,13 @@ export const metadata: Metadata = {
     title: 'Litter Pick — Care for your corner.',
     description: 'Report litter, find local hotspots, and join picks near you. A simpler way to look after where you live.',
     url: 'https://litter-pick.com',
+    images: [{ url: 'https://litter-pick.com/og-image.jpg', width: 1200, height: 630, alt: 'Litter Pick — Care for your corner' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Litter Pick — Care for your corner.',
     description: 'Report litter, find local hotspots, and join picks near you. A simpler way to look after where you live.',
+    images: ['https://litter-pick.com/og-image.jpg'],
   },
 };
 

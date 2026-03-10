@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const { data: hotspot } = await supabase
       .from('hotspots')
-      .select('area_name, centroid_latitude, centroid_longitude')
+      .select('area_name, centroid_latitude, centroid_longitude, latest_before_image_url')
       .eq('id', cleanup.hotspot_id)
       .single();
 
@@ -54,6 +54,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const url = `https://litter-pick.com/pick/${params.id}`;
 
+    const ogImage = hotspot?.latest_before_image_url || 'https://litter-pick.com/og-image.jpg';
+
     return {
       title,
       description,
@@ -63,11 +65,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         url,
+        images: [{ url: ogImage, width: 1200, height: 630, alt: name }],
       },
       twitter: {
-        card: 'summary',
+        card: 'summary_large_image',
         title,
         description,
+        images: [ogImage],
       },
     };
   } catch {

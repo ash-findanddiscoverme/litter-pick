@@ -260,7 +260,7 @@ export default function ReportPage() {
                 initialCenter={longitude && latitude ? [longitude, latitude] : DEFAULT_CENTER}
                 initialZoom={longitude && latitude ? 15 : DEFAULT_ZOOM}
                 onLocationSelect={handleLocationSelect}
-                className="flex-1 min-h-[200px] sm:min-h-[300px]"
+                className="flex-1 min-h-[200px] max-h-[250px] sm:min-h-[300px] sm:max-h-none"
               />
 
               {latitude && longitude ? (
