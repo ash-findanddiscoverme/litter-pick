@@ -95,6 +95,30 @@ export default function PickCard({ pick }: PickCardProps) {
           <p className="text-sm text-weathered">{pick.notes}</p>
         )}
 
+        {/* Mini map + directions */}
+        {pick.hotspot_lat && pick.hotspot_lng && (
+          <div className="space-y-2">
+            <div className="rounded-xl overflow-hidden">
+              <img
+                src={`https://api.maptiler.com/maps/streets-v2/static/${pick.hotspot_lng},${pick.hotspot_lat},14/600x200@2x.png?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}&markers=${pick.hotspot_lng},${pick.hotspot_lat},#4AA853`}
+                alt={`Map showing ${pick.hotspot_name || 'pick location'}`}
+                className="w-full h-32 object-cover"
+              />
+            </div>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${pick.hotspot_lat},${pick.hotspot_lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-stone-50 hover:bg-stone-100 rounded-xl text-sm font-medium text-loam transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+              </svg>
+              Get directions
+            </a>
+          </div>
+        )}
+
         {/* Footer: volunteer count + join */}
         <div className="flex items-center justify-between pt-1">
           <span className="text-xs text-stone-400">
