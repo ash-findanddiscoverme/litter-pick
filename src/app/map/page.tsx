@@ -92,7 +92,7 @@ export default function MapPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 pt-16 flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
+      <main className="flex-1 pt-16 flex flex-col" style={{ height: '100vh' }}>
         {/* Page heading */}
         <div className="px-4 py-3 bg-stone-50 border-b border-stone-100">
           <h1 className="text-2xl font-bold text-loam">Litter Map - Heat map of reported litter in Oxfordshire</h1>
@@ -119,7 +119,7 @@ export default function MapPage() {
         )}
 
         {/* Map */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-h-0">
           <HeatMap
             ref={mapRef}
             hotspots={hotspots}

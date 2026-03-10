@@ -326,11 +326,10 @@ const HeatMap = forwardRef<HeatMapHandle, HeatMapProps>(function HeatMap({
 
   return (
     <div className={className || 'relative'} style={className ? undefined : { minHeight: 200 }}>
-      {/* MapLibre forcibly sets position:relative on its container, so we cannot
-          use absolute positioning on it. Use absolute fill instead. */}
       <div
         ref={mapContainer}
-        className="absolute inset-0 rounded-2xl overflow-hidden"
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        className={className?.includes('inset-0') ? '' : 'rounded-2xl overflow-hidden'}
       />
       {pickMode && (
         <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 text-xs font-medium text-weathered shadow-sm">
