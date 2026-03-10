@@ -32,14 +32,14 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
-          <Link href="/map" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
-            Map
-          </Link>
           <Link href="/report" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
             Report
           </Link>
+          <Link href="/map" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
+            Map
+          </Link>
           <Link href="/picks" className="px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50 transition-colors">
-            Picks
+            Pick
           </Link>
           {user ? (
             <Link href="/profile">
@@ -76,14 +76,14 @@ export default function Header() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden bg-white border-t border-stone-100 px-4 py-3 space-y-1">
+          <Link href="/report" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
+            Report
+          </Link>
           <Link href="/map" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
             Map
           </Link>
-          <Link href="/report" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
-            Report litter
-          </Link>
           <Link href="/picks" className="block px-3 py-2 text-sm font-medium text-weathered hover:text-loam rounded-lg hover:bg-stone-50" onClick={() => setMenuOpen(false)}>
-            Picks
+            Pick
           </Link>
           {user ? (
             <Link href="/profile" className="block px-3 py-2 text-sm font-medium text-brand-500 hover:text-brand-600 rounded-lg hover:bg-brand-50" onClick={() => setMenuOpen(false)}>
