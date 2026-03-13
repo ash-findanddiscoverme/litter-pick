@@ -42,6 +42,7 @@ export async function PATCH(
         'meet_lat',
         'meet_lng',
         'meet_instructions',
+        'proposed_time',
       ];
 
       const updates: Record<string, unknown> = {};

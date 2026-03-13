@@ -232,6 +232,11 @@ export default function CleanupPage() {
   const [step, setStep] = useState<Step>('info');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // Date/time editing
+  const [editingDateTime, setEditingDateTime] = useState(false);
+  const [newDateTime, setNewDateTime] = useState('');
+  const [savingDateTime, setSavingDateTime] = useState(false);
+
   // Meet location
   const [meetLat, setMeetLat] = useState<number | null>(null);
   const [meetLng, setMeetLng] = useState<number | null>(null);
@@ -435,6 +440,29 @@ export default function CleanupPage() {
     }
   };
 
+  const handleSaveDateTime = async () => {
+    if (!newDateTime || !cleanup) return;
+    const dateObj = new Date(newDateTime);
+    if (isNaN(dateObj.getTime())) return;
+
+    setSavingDateTime(true);
+    try {
+      const res = await fetch(`/api/cleanups/${id}/equipment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposed_time: dateObj.toISOString() }),
+      });
+      if (res.ok) {
+        setCleanup({ ...cleanup, proposed_time: dateObj.toISOString() });
+        setEditingDateTime(false);
+      }
+    } catch {
+      // silent
+    } finally {
+      setSavingDateTime(false);
+    }
+  };
+
   const handleSaveMeetLocation = async (lat: number, lng: number) => {
     setSavingMeet(true);
     try {
@@ -627,19 +655,60 @@ export default function CleanupPage() {
                 {hotspot?.county && (
                   <p className="text-sm text-stone-500">{hotspot.county}</p>
                 )}
-                {cleanup.proposed_time && (
-                  <p className="text-sm text-brand-500 font-medium mt-1">
-                    <svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                    </svg>
-                    {new Date(cleanup.proposed_time).toLocaleDateString('en-GB', {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
+                {cleanup.proposed_time && !editingDateTime && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm text-brand-500 font-medium">
+                      <svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                      </svg>
+                      {new Date(cleanup.proposed_time).toLocaleDateString('en-GB', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                    {currentUserId === organiser?.id && cleanup.status !== 'completed' && cleanup.status !== 'cancelled' && (
+                      <button
+                        onClick={() => {
+                          const d = new Date(cleanup.proposed_time!);
+                          const pad = (n: number) => n.toString().padStart(2, '0');
+                          setNewDateTime(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+                          setEditingDateTime(true);
+                        }}
+                        className="text-xs text-brand-500 hover:text-brand-600 font-medium"
+                      >
+                        Change
+                      </button>
+                    )}
+                  </div>
+                )}
+                {editingDateTime && (
+                  <div className="mt-2 p-3 bg-stone-50 rounded-lg space-y-2">
+                    <label className="block text-xs font-medium text-weathered">New date and time</label>
+                    <input
+                      type="datetime-local"
+                      value={newDateTime}
+                      onChange={(e) => setNewDateTime(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm text-loam focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEditingDateTime(false)}
+                        className="px-3 py-1.5 text-xs font-medium text-stone-500 hover:text-stone-700"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveDateTime}
+                        disabled={savingDateTime || !newDateTime}
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-50"
+                      >
+                        {savingDateTime ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
                 )}
                 <div className="mt-2">
                   <ShareButton
