@@ -409,20 +409,25 @@ export default function HotspotDetailPage() {
             </div>
           </Card>
 
-          {/* Pick info */}
-          {cleanup && (
-            <Card>
-              <h3 className="text-sm font-semibold text-loam mb-2">Pick planned</h3>
-              <p className="text-sm text-weathered">
-                Status: {cleanup.status}
-                {cleanup.proposed_time && ` · ${new Date(cleanup.proposed_time).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}
-              </p>
-              {cleanup.status === 'scheduled' || cleanup.status === 'in_progress' ? (
-                <a href={`/pick/${cleanup.id}`} className="block mt-3">
-                  <Button size="sm" fullWidth>View pick details</Button>
-                </a>
-              ) : null}
-            </Card>
+          {/* Pick info - show if an active pick exists */}
+          {cleanup && cleanup.status !== 'completed' && cleanup.status !== 'cancelled' && (
+            <a href={`/pick/${cleanup.id}`} className="block">
+              <Card>
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                  </svg>
+                  <h3 className="text-sm font-semibold text-loam">Pick planned</h3>
+                  <svg className="w-4 h-4 text-stone-300 ml-auto" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+                {cleanup.proposed_time && (
+                  <p className="text-sm text-brand-500 font-medium">{formatPickDate(cleanup.proposed_time)}</p>
+                )}
+                <p className="text-xs text-stone-400 mt-1">{cleanup.volunteer_count} {cleanup.volunteer_count === 1 ? 'person' : 'people'} joining</p>
+              </Card>
+            </a>
           )}
 
           {/* Volunteer interest */}
@@ -432,42 +437,14 @@ export default function HotspotDetailPage() {
             </Card>
           )}
 
-          {/* Organise a pick */}
-          {hotspot.status !== 'cleaned' && (
+          {/* Organise a pick - only if no active pick exists */}
+          {hotspot.status !== 'cleaned' && (!cleanup || cleanup.status === 'completed' || cleanup.status === 'cancelled') && (
             <a href={`/picks/new?hotspot_id=${hotspot.id}`} className="block mt-4">
               <Button fullWidth variant="outline">
                 <svg className="w-4 h-4 inline-block mr-1.5 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                 </svg>
                 Organise a pick
-              </Button>
-            </a>
-          )}
-
-          {/* Scheduled pick info */}
-          {cleanup && cleanup.status === 'scheduled' && cleanup.proposed_time && (
-            <a href={`/pick/${cleanup.id}`} className="block">
-              <Card>
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                  </svg>
-                  <h3 className="text-sm font-semibold text-loam">Pick scheduled</h3>
-                  <svg className="w-4 h-4 text-stone-300 ml-auto" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-                <p className="text-sm text-brand-500 font-medium">{formatPickDate(cleanup.proposed_time)}</p>
-                <p className="text-xs text-stone-400 mt-1">{cleanup.volunteer_count} {cleanup.volunteer_count === 1 ? 'person' : 'people'} joining</p>
-              </Card>
-            </a>
-          )}
-
-          {/* Completion link */}
-          {(hotspot.status === 'cleanup_forming' || hotspot.status === 'needs_attention') && cleanup && (
-            <a href={`/pick/${cleanup.id}`}>
-              <Button fullWidth variant="secondary">
-                Upload after photo / mark complete
               </Button>
             </a>
           )}
