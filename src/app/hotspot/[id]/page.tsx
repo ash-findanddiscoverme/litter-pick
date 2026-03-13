@@ -27,6 +27,15 @@ export default function HotspotDetailPage() {
   const [hotspot, setHotspot] = useState<Hotspot | null>(null);
   const [cleanup, setCleanup] = useState<Cleanup | null>(null);
   const [photos, setPhotos] = useState<ReportPhoto[]>([]);
+  const [pastPicks, setPastPicks] = useState<Array<{
+    id: string;
+    hotspot_id: string;
+    hotspot_name: string | null;
+    status: string;
+    proposed_time: string | null;
+    volunteer_count: number;
+    bags_collected: number | null;
+  }>>([]);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,6 +46,8 @@ export default function HotspotDetailPage() {
   const [savingName, setSavingName] = useState(false);
   const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null);
 
+  const hasActivePick = cleanup && cleanup.status !== 'completed' && cleanup.status !== 'cancelled';
+
   useEffect(() => {
     fetch(`/api/hotspots/${id}`)
       .then((r) => r.json())
@@ -44,6 +55,7 @@ export default function HotspotDetailPage() {
         setHotspot(data.hotspot || null);
         setCleanup(data.cleanup || null);
         setPhotos(data.photos || []);
+        setPastPicks(data.pastPicks || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -433,15 +445,15 @@ export default function HotspotDetailPage() {
             </a>
           )}
 
-          {/* Volunteer interest */}
-          {hotspot.status !== 'cleaned' && (
+          {/* Volunteer interest - only show when no active pick is planned */}
+          {hotspot.status !== 'cleaned' && !hasActivePick && (
             <Card>
               <VolunteerInterestButton hotspotId={hotspot.id} />
             </Card>
           )}
 
           {/* Organise a pick - only if no active pick exists */}
-          {hotspot.status !== 'cleaned' && (!cleanup || cleanup.status === 'completed' || cleanup.status === 'cancelled') && (
+          {hotspot.status !== 'cleaned' && !hasActivePick && (
             <a href={`/picks/new?hotspot_id=${hotspot.id}`} className="block mt-4">
               <Button fullWidth variant="outline">
                 <svg className="w-4 h-4 inline-block mr-1.5 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -450,6 +462,49 @@ export default function HotspotDetailPage() {
                 Organise a pick
               </Button>
             </a>
+          )}
+
+          {/* Past picks nearby */}
+          {pastPicks.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-loam mb-2">Past picks nearby</h3>
+              <div className="space-y-2">
+                {pastPicks.map((pick) => (
+                  <a key={pick.id} href={`/pick/${pick.id}`} className="block">
+                    <Card className="hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                              pick.status === 'completed' ? 'bg-green-50 text-green-700' : 'bg-stone-100 text-stone-500'
+                            }`}>
+                              {pick.status === 'completed' ? 'Completed' : 'Cancelled'}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium text-loam truncate">
+                            {pick.hotspot_name || 'Litter pick'}
+                          </p>
+                          <div className="flex items-center gap-3 mt-0.5 text-xs text-weathered">
+                            {pick.proposed_time && (
+                              <span>{new Date(pick.proposed_time).toLocaleDateString('en-GB', {
+                                day: 'numeric', month: 'short', year: 'numeric',
+                              })}</span>
+                            )}
+                            <span>{pick.volunteer_count} volunteer{pick.volunteer_count !== 1 ? 's' : ''}</span>
+                            {pick.status === 'completed' && pick.bags_collected != null && (
+                              <span>{pick.bags_collected} bags</span>
+                            )}
+                          </div>
+                        </div>
+                        <svg className="w-4 h-4 text-stone-300 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                      </div>
+                    </Card>
+                  </a>
+                ))}
+              </div>
+            </div>
           )}
 
           <div className="flex gap-2">
