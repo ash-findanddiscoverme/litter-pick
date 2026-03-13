@@ -3,26 +3,15 @@ const CACHE_NAME = 'litterpick-v4';
 // Install: activate immediately, no pre-caching needed since we don't
 // serve same-origin content from cache (HTTP/2 handles that better)
 self.addEventListener('install', () => {
-  // #region agent log
-  console.log('[SW-DBG-65d3e1] install event fired');
-  // #endregion
   self.skipWaiting();
 });
 
 // Activate: clean old caches and take control of all tabs
 self.addEventListener('activate', (event) => {
-  // #region agent log
-  console.log('[SW-DBG-65d3e1] activate event fired');
-  // #endregion
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => {
-          // #region agent log
-          console.log('[SW-DBG-65d3e1] deleting old cache:', key);
-          // #endregion
-          return caches.delete(key);
-        })
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       )
     ).then(() => self.clients.claim())
   );
@@ -58,9 +47,7 @@ self.addEventListener('fetch', (event) => {
         )
       );
     }
-  } catch (err) {
-    // #region agent log
-    console.error('[SW-DBG-65d3e1] fetch handler error:', err);
-    // #endregion
+  } catch {
+    // Silently ignore — let the browser handle the request normally
   }
 });
