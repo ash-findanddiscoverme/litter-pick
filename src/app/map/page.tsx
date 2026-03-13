@@ -8,6 +8,7 @@ import type { HeatMapHandle } from '@/components/map/HeatMap';
 import HotspotCard from '@/components/hotspot/HotspotCard';
 import Button from '@/components/ui/Button';
 import type { Hotspot } from '@/types/database';
+import { getStoredLocation, requestUserLocation } from '@/lib/location';
 
 interface SearchResult {
   display_name: string;
@@ -24,6 +25,7 @@ export default function MapPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const mapRef = useRef<HeatMapHandle>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +41,25 @@ export default function MapPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Get user location from cookie or request browser geolocation
+  useEffect(() => {
+    const stored = getStoredLocation();
+    if (stored) {
+      setUserLocation({ lat: stored.lat, lng: stored.lng });
+      return;
+    }
+    requestUserLocation().then((loc) => {
+      if (loc) setUserLocation(loc);
+    });
+  }, []);
+
+  // Fly to user location when detected (after map is loaded)
+  useEffect(() => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.flyTo(userLocation.lng, userLocation.lat, 12);
+    }
+  }, [userLocation]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -124,6 +145,8 @@ export default function MapPage() {
             ref={mapRef}
             hotspots={hotspots}
             onHotspotClick={handleHotspotClick}
+            initialCenter={userLocation ? [userLocation.lng, userLocation.lat] : undefined}
+            initialZoom={userLocation ? 12 : undefined}
             className="absolute inset-0"
           />
 

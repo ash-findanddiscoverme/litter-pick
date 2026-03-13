@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { compressImage, getCurrentPosition, extractGPSFromImage } from '@/lib/image';
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from '@/lib/constants';
+import { getStoredLocation, requestUserLocation } from '@/lib/location';
 import type { ReportSeverity } from '@/types/database';
 
 interface SearchResult {
@@ -190,16 +191,41 @@ export default function ReportPage() {
                 </p>
               </div>
               <PhotoCapture onPhotoSelected={handlePhoto} preview={photoPreview} />
-              <Button variant="ghost" size="sm" onClick={() => { setStep('location'); }}>
-                Skip photo
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={locating}
+                onClick={async () => {
+                  setLocating(true);
+                  const stored = getStoredLocation();
+                  if (stored) {
+                    setLatitude(stored.lat);
+                    setLongitude(stored.lng);
+                    setLocationSource('manual');
+                    setLocating(false);
+                    setStep('location');
+                    return;
+                  }
+                  const loc = await requestUserLocation();
+                  if (loc) {
+                    setLatitude(loc.lat);
+                    setLongitude(loc.lng);
+                    setLocationSource('gps');
+                  }
+                  setLocating(false);
+                  setStep('location');
+                }}
+              >
+                {locating ? 'Getting location...' : 'Skip & select location'}
               </Button>
             </div>
           )}
 
           {/* Step 2: Location */}
           {step === 'location' && (
-            <div className="flex flex-col gap-3" style={{ minHeight: 'calc(100vh - 12rem)' }}>
-              <div>
+            <div className="flex flex-col" style={{ height: 'calc(100vh - 10rem)' }}>
+              {/* Header */}
+              <div className="mb-3">
                 <h1 className="text-2xl font-bold text-loam">Where is it?</h1>
                 <p className="text-sm text-weathered mt-1">
                   {locating
@@ -219,7 +245,7 @@ export default function ReportPage() {
               </div>
 
               {/* Location search */}
-              <div ref={searchContainerRef} className="relative">
+              <div ref={searchContainerRef} className="relative mb-3">
                 <div className="relative">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />
@@ -254,47 +280,57 @@ export default function ReportPage() {
                 )}
               </div>
 
-              <HeatMap
-                ref={mapRef}
-                pickMode
-                initialCenter={longitude && latitude ? [longitude, latitude] : DEFAULT_CENTER}
-                initialZoom={longitude && latitude ? 15 : DEFAULT_ZOOM}
-                onLocationSelect={handleLocationSelect}
-                className="flex-1 min-h-[200px] max-h-[250px] sm:min-h-[300px] sm:max-h-none"
-              />
+              {/* Map container with floating confirm button */}
+              <div className="relative flex-1 min-h-0">
+                <HeatMap
+                  ref={mapRef}
+                  pickMode
+                  initialCenter={longitude && latitude ? [longitude, latitude] : DEFAULT_CENTER}
+                  initialZoom={longitude && latitude ? 15 : DEFAULT_ZOOM}
+                  onLocationSelect={handleLocationSelect}
+                  className="absolute inset-0 rounded-2xl"
+                />
 
-              {latitude && longitude ? (
-                <p className="text-xs text-stone-300 text-center">
-                  {latitude.toFixed(5)}, {longitude.toFixed(5)}
-                </p>
-              ) : (
-                <p className="text-xs text-amber-600 text-center font-medium">
-                  Tap the map or search above to set the location
-                </p>
-              )}
+                {/* Floating confirm button - centered at bottom */}
+                <div className="absolute bottom-4 left-4 right-4 flex justify-center z-10">
+                  <Button
+                    size="lg"
+                    className="shadow-lg"
+                    onClick={() => {
+                      if (!latitude || !longitude) {
+                        setError('Please set a location first');
+                        return;
+                      }
+                      setError('');
+                      setStep('details');
+                    }}
+                    disabled={!latitude || !longitude}
+                  >
+                    Confirm location
+                  </Button>
+                </div>
+              </div>
 
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => setStep('photo')}>
+              {/* Footer with coordinates and back button */}
+              <div className="mt-3 space-y-2">
+                {latitude && longitude ? (
+                  <p className="text-xs text-stone-300 text-center">
+                    {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-600 text-center font-medium">
+                    Tap the map or search above to set the location
+                  </p>
+                )}
+
+                <Button variant="ghost" onClick={() => setStep('photo')} className="w-full">
                   Back
                 </Button>
-                <Button
-                  fullWidth
-                  onClick={() => {
-                    if (!latitude || !longitude) {
-                      setError('Please set a location first');
-                      return;
-                    }
-                    setError('');
-                    setStep('details');
-                  }}
-                  disabled={!latitude || !longitude}
-                >
-                  Confirm location
-                </Button>
+
+                {error && step === 'location' && (
+                  <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2">{error}</p>
+                )}
               </div>
-              {error && step === 'location' && (
-                <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2">{error}</p>
-              )}
             </div>
           )}
 
