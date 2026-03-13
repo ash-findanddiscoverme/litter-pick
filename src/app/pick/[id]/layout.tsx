@@ -9,15 +9,17 @@ interface Props {
 
 function formatPickDate(dateStr: string): string {
   const d = new Date(dateStr);
-  const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
-  const day = d.getDate();
-  const month = d.toLocaleDateString('en-GB', { month: 'long' });
-  const year = d.getFullYear();
-  const hours = d.getHours();
-  const minutes = d.getMinutes().toString().padStart(2, '0');
-  const ampm = hours >= 12 ? 'pm' : 'am';
-  const h12 = hours % 12 || 12;
-  return `${weekday} ${day} ${month} ${year}, ${h12}:${minutes}${ampm}`;
+  const opts: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Europe/London',
+  };
+  return d.toLocaleDateString('en-GB', opts);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

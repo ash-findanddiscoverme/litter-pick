@@ -116,19 +116,18 @@ export default function CleanupPage() {
     const name = hotspot.area_name || 'Litter hotspot';
     const coords = `${hotspot.centroid_latitude.toFixed(5)}, ${hotspot.centroid_longitude.toFixed(5)}`;
 
-    // Format date as "Saturday 21 March 2026, 11:15am"
     let dateStr = '';
     if (cleanup.proposed_time) {
       const d = new Date(cleanup.proposed_time);
-      const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
-      const day = d.getDate();
-      const month = d.toLocaleDateString('en-GB', { month: 'long' });
-      const year = d.getFullYear();
-      const hours = d.getHours();
-      const minutes = d.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'pm' : 'am';
-      const h12 = hours % 12 || 12;
-      dateStr = `${weekday} ${day} ${month} ${year}, ${h12}:${minutes}${ampm}`;
+      dateStr = d.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
     }
 
     document.title = dateStr

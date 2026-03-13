@@ -103,11 +103,13 @@ function NewPickContent() {
   };
 
   // Get minimum datetime (now + 1 hour, rounded to nearest 15 min)
+  // Must return local time string for datetime-local input (not UTC)
   const getMinDateTime = () => {
     const d = new Date();
     d.setHours(d.getHours() + 1);
     d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0);
-    return d.toISOString().slice(0, 16);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
   if (authed === null) {
