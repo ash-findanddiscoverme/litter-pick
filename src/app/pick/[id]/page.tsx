@@ -18,8 +18,8 @@ import { createClient } from '@/lib/supabase/client';
 import CouncilSection from '@/components/picks/CouncilSection';
 import ShareButton from '@/components/ui/ShareButton';
 import QASection from '@/components/picks/QASection';
-import { EquipmentIcons, EquipmentSummary } from '@/components/profile/EquipmentSection';
-import type { Cleanup, Hotspot, QuestionWithAnswers } from '@/types/database';
+import { EquipmentIcons } from '@/components/profile/EquipmentSection';
+import type { Cleanup, Hotspot, QuestionWithAnswers, EquipmentProvision } from '@/types/database';
 
 export const runtime = 'edge';
 
@@ -70,7 +70,21 @@ function PickMap({ lat, lng }: { lat: number; lng: number }) {
   );
 }
 
-type Step = 'info' | 'complete' | 'submitting' | 'success';
+type Step = 'info' | 'complete' | 'submitting' | 'success' | 'confirm_event';
+
+function isEventDay(proposedTime: string | null): boolean {
+  if (!proposedTime) return false;
+  const eventDate = new Date(proposedTime);
+  const now = new Date();
+  const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return today >= eventDay;
+}
+
+function hasEventPassed(proposedTime: string | null): boolean {
+  if (!proposedTime) return false;
+  return new Date() > new Date(proposedTime);
+}
 
 export default function CleanupPage() {
   const params = useParams();
@@ -83,6 +97,22 @@ export default function CleanupPage() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>('info');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Equipment management
+  const [equipmentProvision, setEquipmentProvision] = useState<EquipmentProvision>('volunteers');
+  const [equipmentCounts, setEquipmentCounts] = useState({
+    bags: 0,
+    hoops: 0,
+    gloves: 0,
+    pickers: 0,
+  });
+  const [updatingEquipment, setUpdatingEquipment] = useState(false);
+
+  // Event confirmation
+  const [confirmingEvent, setConfirmingEvent] = useState(false);
+  const [eventWentAhead, setEventWentAhead] = useState<boolean | null>(null);
+  const [afterPhotos, setAfterPhotos] = useState<File[]>([]);
+  const [afterPhotoPreviews, setAfterPhotoPreviews] = useState<string[]>([]);
 
   // Completion form
   const [photo, setPhoto] = useState<File | null>(null);
@@ -97,10 +127,20 @@ export default function CleanupPage() {
     fetch(`/api/cleanups/${id}`)
       .then((r) => r.json())
       .then((data) => {
-        setCleanup(data.cleanup || null);
+        const c = data.cleanup as Cleanup | null;
+        setCleanup(c);
         setHotspot(data.hotspot || null);
         setOrganiser(data.organiser || null);
         setVolunteers(data.volunteers || []);
+        if (c) {
+          setEquipmentProvision(c.equipment_provision || 'volunteers');
+          setEquipmentCounts({
+            bags: c.equipment_bags_confirmed || 0,
+            hoops: c.equipment_hoops_confirmed || 0,
+            gloves: c.equipment_gloves_confirmed || 0,
+            pickers: c.equipment_pickers_confirmed || 0,
+          });
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -187,6 +227,90 @@ export default function CleanupPage() {
     }
   };
 
+  const handleEquipmentProvisionChange = async (provision: EquipmentProvision) => {
+    setEquipmentProvision(provision);
+    try {
+      await fetch(`/api/cleanups/${id}/equipment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ equipment_provision: provision }),
+      });
+    } catch {
+      // Revert on error
+      setEquipmentProvision(equipmentProvision);
+    }
+  };
+
+  const handleEquipmentCountChange = async (item: keyof typeof equipmentCounts, delta: number) => {
+    const newValue = Math.max(0, equipmentCounts[item] + delta);
+    const prev = equipmentCounts[item];
+    setEquipmentCounts({ ...equipmentCounts, [item]: newValue });
+    setUpdatingEquipment(true);
+
+    try {
+      const fieldMap: Record<string, string> = {
+        bags: 'equipment_bags_confirmed',
+        hoops: 'equipment_hoops_confirmed',
+        gloves: 'equipment_gloves_confirmed',
+        pickers: 'equipment_pickers_confirmed',
+      };
+      await fetch(`/api/cleanups/${id}/equipment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [fieldMap[item]]: newValue }),
+      });
+    } catch {
+      setEquipmentCounts({ ...equipmentCounts, [item]: prev });
+    } finally {
+      setUpdatingEquipment(false);
+    }
+  };
+
+  const handleAfterPhotoAdd = async (file: File) => {
+    const compressed = await compressImage(file);
+    setAfterPhotos([...afterPhotos, compressed]);
+    setAfterPhotoPreviews([...afterPhotoPreviews, URL.createObjectURL(compressed)]);
+  };
+
+  const handleConfirmEvent = async (wentAhead: boolean) => {
+    setConfirmingEvent(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('event_confirmed', wentAhead ? 'true' : 'false');
+      if (wentAhead) {
+        afterPhotos.forEach((photo, i) => {
+          formData.append(`after_photo_${i}`, photo);
+        });
+      }
+
+      const res = await fetch(`/api/cleanups/${id}/confirm`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to confirm event');
+      }
+
+      // Update local state
+      if (cleanup) {
+        setCleanup({
+          ...cleanup,
+          event_confirmed: wentAhead,
+          status: wentAhead ? 'completed' : 'cancelled',
+        });
+      }
+      setStep('info');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setConfirmingEvent(false);
+    }
+  };
+
   const statusLabel = (s: string) => {
     switch (s) {
       case 'scheduled': return 'Scheduled';
@@ -232,6 +356,36 @@ export default function CleanupPage() {
         <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
           {step === 'info' && (
             <>
+              {/* Event confirmation banner - show if event passed but not confirmed */}
+              {cleanup.status !== 'completed' && cleanup.status !== 'cancelled' && 
+               cleanup.event_confirmed === null && hasEventPassed(cleanup.proposed_time) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <p className="text-sm font-medium text-amber-800 mb-3">
+                    Did this litter pick go ahead?
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setEventWentAhead(true);
+                        setStep('confirm_event');
+                      }}
+                      className="flex-1"
+                    >
+                      Yes, it happened
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleConfirmEvent(false)}
+                      className="flex-1"
+                    >
+                      No, it didn&apos;t
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Status and title */}
               <div>
                 <Badge className="bg-brand-50 text-brand-600 mb-2">
@@ -336,41 +490,39 @@ export default function CleanupPage() {
                 />
               )}
 
-              {/* Volunteers */}
+              {/* Volunteers & Equipment Combined for Mobile */}
               {volunteers.length > 0 && (
                 <Card>
                   <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">
                     Who&apos;s joining ({volunteers.length})
                   </h3>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {volunteers.map((v) => (
-                      <div key={v.id} className="flex gap-3">
+                      <div key={v.id} className="flex flex-col items-center text-center p-2 bg-stone-50 rounded-lg">
                         {v.avatar_url ? (
                           <img
                             src={v.avatar_url}
                             alt={v.first_name}
-                            className="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5"
+                            className="w-10 h-10 rounded-full object-cover mb-1.5"
                           />
                         ) : (
-                          <div className="w-9 h-9 bg-stone-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="text-xs font-bold text-stone-400">
+                          <div className="w-10 h-10 bg-stone-200 rounded-full flex items-center justify-center mb-1.5">
+                            <span className="text-sm font-bold text-stone-500">
                               {v.first_name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-loam">{v.first_name}</p>
-                            {v.interest_type === 'organise' && (
-                              <span className="text-[11px] text-brand-500 font-medium">Organiser</span>
-                            )}
-                          </div>
+                        <p className="text-xs font-medium text-loam truncate w-full">{v.first_name}</p>
+                        {v.interest_type === 'organise' && (
+                          <span className="text-[10px] text-brand-500 font-medium">Organiser</span>
+                        )}
+                        <div className="mt-1">
                           <EquipmentIcons equipment={{
                             equipment_bags: v.equipment_bags,
                             equipment_bag_hoop: v.equipment_bag_hoop,
                             equipment_gloves: v.equipment_gloves,
                             equipment_litter_picker: v.equipment_litter_picker,
-                          }} />
+                          }} compact />
                         </div>
                       </div>
                     ))}
@@ -378,15 +530,96 @@ export default function CleanupPage() {
                 </Card>
               )}
 
-              {/* Equipment overview */}
-              {volunteers.length > 0 && (
-                <Card>
-                  <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">
-                    Equipment
-                  </h3>
-                  <EquipmentSummary volunteers={volunteers} />
-                </Card>
-              )}
+              {/* Pick Equipment */}
+              <Card>
+                <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">
+                  Pick Equipment
+                </h3>
+
+                {/* Equipment provision toggle - organiser only */}
+                {currentUserId === organiser?.id && (
+                  <div className="mb-4 p-3 bg-stone-50 rounded-lg">
+                    <p className="text-xs font-medium text-weathered mb-2">Equipment will be provided by:</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEquipmentProvisionChange('volunteers')}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                          equipmentProvision === 'volunteers'
+                            ? 'bg-brand-500 text-white'
+                            : 'bg-white text-weathered border border-stone-200 hover:border-stone-300'
+                        }`}
+                      >
+                        Volunteers bring own
+                      </button>
+                      <button
+                        onClick={() => handleEquipmentProvisionChange('organiser')}
+                        className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                          equipmentProvision === 'organiser'
+                            ? 'bg-brand-500 text-white'
+                            : 'bg-white text-weathered border border-stone-200 hover:border-stone-300'
+                        }`}
+                      >
+                        Organiser/Council provides
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Equipment provision info for non-organisers */}
+                {currentUserId !== organiser?.id && (
+                  <div className="mb-4 p-3 bg-stone-50 rounded-lg">
+                    <p className="text-xs text-weathered">
+                      {equipmentProvision === 'organiser'
+                        ? 'Equipment will be provided by the organiser or council'
+                        : 'Volunteers are expected to bring their own equipment'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Equipment counts with organiser controls */}
+                <div className="space-y-2">
+                  {[
+                    { key: 'bags' as const, label: 'Bags', icon: '🛍️' },
+                    { key: 'hoops' as const, label: 'Bag hoops', icon: '⭕' },
+                    { key: 'gloves' as const, label: 'Gloves', icon: '🧤' },
+                    { key: 'pickers' as const, label: 'Litter pickers', icon: '🔧' },
+                  ].map(({ key, label, icon }) => (
+                    <div key={key} className="flex items-center justify-between py-2 px-3 bg-stone-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{icon}</span>
+                        <span className="text-sm font-medium text-loam">{label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {currentUserId === organiser?.id && (
+                          <button
+                            onClick={() => handleEquipmentCountChange(key, -1)}
+                            disabled={updatingEquipment || equipmentCounts[key] === 0}
+                            className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-stone-200 text-stone-500 hover:bg-stone-100 disabled:opacity-40"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
+                            </svg>
+                          </button>
+                        )}
+                        <span className="w-8 text-center text-sm font-semibold text-loam">
+                          {equipmentCounts[key]}
+                        </span>
+                        {currentUserId === organiser?.id && (
+                          <button
+                            onClick={() => handleEquipmentCountChange(key, 1)}
+                            disabled={updatingEquipment}
+                            className="w-7 h-7 flex items-center justify-center rounded-full bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-40"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
 
               {/* Notes */}
               {cleanup.notes && (
@@ -407,10 +640,20 @@ export default function CleanupPage() {
               />
 
               {/* Action buttons */}
-              {cleanup.status !== 'completed' && (
-                <Button fullWidth onClick={() => setStep('complete')}>
-                  Log the pick
-                </Button>
+              {cleanup.status !== 'completed' && cleanup.status !== 'cancelled' && (
+                <>
+                  {isEventDay(cleanup.proposed_time) ? (
+                    <Button fullWidth onClick={() => setStep('complete')}>
+                      Log the pick
+                    </Button>
+                  ) : (
+                    <div className="bg-stone-50 rounded-xl p-4 text-center">
+                      <p className="text-sm text-weathered">
+                        You can log this pick on {cleanup.proposed_time ? new Date(cleanup.proposed_time).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : 'the event day'}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
 
               {hotspot && (
@@ -508,6 +751,76 @@ export default function CleanupPage() {
                 </a>
               </div>
             </Card>
+          )}
+
+          {step === 'confirm_event' && (
+            <>
+              <div>
+                <h1 className="text-2xl font-bold text-loam">The pick went ahead!</h1>
+                <p className="text-sm text-weathered mt-1">
+                  Do you have any photos from the event to share?
+                </p>
+              </div>
+
+              {/* Photo upload area */}
+              <div className="space-y-3">
+                {afterPhotoPreviews.map((preview, idx) => (
+                  <div key={idx} className="relative">
+                    <img
+                      src={preview}
+                      alt={`After photo ${idx + 1}`}
+                      className="w-full aspect-video object-cover rounded-xl"
+                    />
+                    <button
+                      onClick={() => {
+                        setAfterPhotos(afterPhotos.filter((_, i) => i !== idx));
+                        setAfterPhotoPreviews(afterPhotoPreviews.filter((_, i) => i !== idx));
+                      }}
+                      className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/70"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+
+                <label className="block cursor-pointer">
+                  <div className="border-2 border-dashed border-stone-200 rounded-xl p-6 text-center hover:border-brand-300 transition-colors">
+                    <svg className="w-8 h-8 mx-auto text-stone-300 mb-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                    </svg>
+                    <p className="text-sm text-weathered">Tap to add a photo</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleAfterPhotoAdd(file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2">{error}</p>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={() => setStep('info')}>Back</Button>
+                <Button
+                  fullWidth
+                  onClick={() => handleConfirmEvent(true)}
+                  disabled={confirmingEvent}
+                >
+                  {confirmingEvent ? 'Confirming...' : afterPhotos.length > 0 ? 'Confirm with photos' : 'Confirm without photos'}
+                </Button>
+              </div>
+            </>
           )}
         </div>
       </main>

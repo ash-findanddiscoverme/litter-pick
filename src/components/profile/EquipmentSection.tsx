@@ -137,13 +137,13 @@ export default function EquipmentSection({ equipment, onChange }: Props) {
 }
 
 /** Equipment icons for volunteer lists — shows labelled pills */
-export function EquipmentIcons({ equipment }: { equipment: Record<string, string | null | undefined> }) {
+export function EquipmentIcons({ equipment, compact }: { equipment: Record<string, string | null | undefined>; compact?: boolean }) {
   const items: { key: string; label: string; icon: JSX.Element }[] = [
     {
       key: 'equipment_bags',
       label: 'Bags',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg className={compact ? 'w-3 h-3' : 'w-4 h-4'} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
         </svg>
       ),
@@ -152,7 +152,7 @@ export function EquipmentIcons({ equipment }: { equipment: Record<string, string
       key: 'equipment_bag_hoop',
       label: 'Hoop',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg className={compact ? 'w-3 h-3' : 'w-4 h-4'} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <circle cx="12" cy="12" r="8" />
           <path strokeLinecap="round" d="M12 4v2m0 12v2" />
         </svg>
@@ -162,7 +162,7 @@ export function EquipmentIcons({ equipment }: { equipment: Record<string, string
       key: 'equipment_gloves',
       label: 'Gloves',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg className={compact ? 'w-3 h-3' : 'w-4 h-4'} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M10.05 4.575a1.575 1.575 0 10-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 013.15 0v1.5m-3.15 0l.075 5.925m3.075-5.925v3m0-3a1.575 1.575 0 013.15 0v3m-3.15 0v3.375c0 .621.504 1.125 1.125 1.125h.75m-6.375-7.5v3.375c0 .621-.504 1.125-1.125 1.125h-.75M6.9 7.575V12m0 0v4.125c0 1.036.84 1.875 1.875 1.875h6.45c1.035 0 1.875-.84 1.875-1.875V12M6.9 12h10.2" />
         </svg>
       ),
@@ -171,7 +171,7 @@ export function EquipmentIcons({ equipment }: { equipment: Record<string, string
       key: 'equipment_litter_picker',
       label: 'Picker',
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <svg className={compact ? 'w-3 h-3' : 'w-4 h-4'} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 3.75L6 6l1.5 2.25M16.5 3.75L18 6l-1.5 2.25M12 3v18m0 0l-3-2m3 2l3-2" />
         </svg>
       ),
@@ -185,6 +185,26 @@ export function EquipmentIcons({ equipment }: { equipment: Record<string, string
   });
 
   if (relevant.length === 0) return null;
+
+  if (compact) {
+    return (
+      <div className="flex flex-wrap justify-center gap-1">
+        {relevant.map(({ key, icon }) => {
+          const isOwn = equipment[key] === 'own';
+          return (
+            <span
+              key={key}
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
+                isOwn ? 'bg-brand-50 text-brand-600' : 'bg-red-50 text-red-500'
+              }`}
+            >
+              {icon}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-wrap gap-1.5">

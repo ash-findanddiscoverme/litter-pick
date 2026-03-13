@@ -70,6 +70,8 @@ export interface VolunteerInterest {
   created_at: string;
 }
 
+export type EquipmentProvision = 'volunteers' | 'organiser';
+
 export interface Cleanup {
   id: string;
   hotspot_id: string;
@@ -82,6 +84,13 @@ export interface Cleanup {
   notes: string | null;
   council_notified?: boolean | null;
   council_collection_confirmed?: boolean | null;
+  equipment_provision?: EquipmentProvision | null;
+  equipment_bags_confirmed?: number | null;
+  equipment_hoops_confirmed?: number | null;
+  equipment_gloves_confirmed?: number | null;
+  equipment_pickers_confirmed?: number | null;
+  event_confirmed?: boolean | null;
+  after_photos?: string[] | null;
 }
 
 export interface CleanupPhoto {

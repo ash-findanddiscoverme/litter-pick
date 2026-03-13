@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import FeedbackModal from '@/components/feedback/FeedbackModal';
-import { ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
 export default function Footer() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -16,7 +15,9 @@ export default function Footer() {
             onClick={() => setFeedbackOpen(true)}
             className="flex items-center justify-center gap-2 w-full text-sm text-weathered hover:text-loam transition-colors"
           >
-            <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 21.192a5.971 5.971 0 01-2.743-.825 4.502 4.502 0 01-.213-7.485A8.258 8.258 0 012.25 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+            </svg>
             <span>Have feedback? Let us know how we can improve</span>
           </button>
         </div>
