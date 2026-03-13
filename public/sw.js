@@ -53,16 +53,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // All other requests: network first, fall back to cache
+  // All other requests: network first with 3s timeout, fall back to cache
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(request))
+    new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        caches.match(request).then((cached) => resolve(cached || fetch(request)));
+      }, 3000);
+
+      fetch(request)
+        .then((response) => {
+          clearTimeout(timer);
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          resolve(response);
+        })
+        .catch(() => {
+          clearTimeout(timer);
+          caches.match(request).then((cached) => resolve(cached || new Response('Offline', { status: 503 })));
+        });
+    })
   );
 });

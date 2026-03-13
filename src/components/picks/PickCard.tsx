@@ -1,41 +1,21 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import maplibregl from 'maplibre-gl';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { formatPickDate } from '@/lib/utils';
-import { MAP_STYLE_URL } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import type { PickWithDetails } from '@/types/database';
 
-/** Tiny non-interactive map for pick cards */
-function MiniMap({ lat, lng, name }: { lat: number; lng: number; name: string | null }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const key = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: MAP_STYLE_URL + key,
-      center: [lng, lat],
-      zoom: 14,
-      interactive: false,
-      attributionControl: false,
-    });
-
-    new maplibregl.Marker({ color: '#4AA853' })
-      .setLngLat([lng, lat])
-      .addTo(map);
-
-    return () => { map.remove(); };
-  }, [lat, lng]);
+/** Lightweight static map image — avoids creating a WebGL context per card */
+function StaticMap({ lat, lng }: { lat: number; lng: number }) {
+  const key = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
+  const src = `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},14/400x256@2x.png?key=${key}&markers=${lng},${lat},#4AA853`;
 
   return (
     <div className="rounded-xl overflow-hidden bg-stone-100" style={{ height: 128 }}>
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      <img src={src} alt="Map" className="w-full h-full object-cover" loading="lazy" />
     </div>
   );
 }
@@ -85,8 +65,14 @@ export default function PickCard({ pick }: PickCardProps) {
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('a') || target.closest('button')) return;
+    router.push(`/pick/${pick.id}`);
+  };
+
   return (
-    <a href={`/pick/${pick.id}`} className="block">
+    <div onClick={handleCardClick} className="cursor-pointer">
     <Card>
       <div className="space-y-3">
         {/* Organiser */}
@@ -136,16 +122,15 @@ export default function PickCard({ pick }: PickCardProps) {
           <p className="text-sm text-weathered">{pick.notes}</p>
         )}
 
-        {/* Mini map + directions */}
+        {/* Static map + directions */}
         {pick.hotspot_lat && pick.hotspot_lng && (
           <div className="space-y-2">
-            <MiniMap lat={pick.hotspot_lat} lng={pick.hotspot_lng} name={pick.hotspot_name} />
+            <StaticMap lat={pick.hotspot_lat} lng={pick.hotspot_lng} />
 
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${pick.hotspot_lat},${pick.hotspot_lng}`}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
               className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-stone-50 hover:bg-stone-100 rounded-xl text-sm font-medium text-loam transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -173,7 +158,7 @@ export default function PickCard({ pick }: PickCardProps) {
               Joined
             </span>
           ) : (
-            <Button size="sm" onClick={(e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); handleJoin(); }} disabled={joining}>
+            <Button size="sm" onClick={handleJoin} disabled={joining}>
               {joining ? 'Joining...' : 'Join'}
             </Button>
           )}
@@ -184,6 +169,6 @@ export default function PickCard({ pick }: PickCardProps) {
         )}
       </div>
     </Card>
-    </a>
+    </div>
   );
 }
