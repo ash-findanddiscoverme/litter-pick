@@ -37,6 +37,7 @@ export interface Hotspot {
   report_count: number;
   volunteer_interest_count: number;
   area_name: string | null;
+  county: string | null;
 }
 
 export interface User {
@@ -136,6 +137,7 @@ export interface PickWithDetails {
   id: string;
   hotspot_id: string;
   hotspot_name: string | null;
+  hotspot_county: string | null;
   hotspot_lat: number;
   hotspot_lng: number;
   hotspot_image: string | null;

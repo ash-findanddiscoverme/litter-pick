@@ -196,6 +196,9 @@ export default function HotspotDetailPage() {
                 )}
               </div>
             )}
+            {hotspot.county && (
+              <p className="text-sm text-stone-500 mt-1">{hotspot.county}</p>
+            )}
             <p className="text-sm text-weathered mt-1">
               {hotspot.report_count} reports · Score: {hotspot.score} · Updated {formatDate(hotspot.updated_at)}
             </p>

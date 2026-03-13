@@ -39,6 +39,9 @@ export default function HotspotCard({ hotspot }: HotspotCardProps) {
             <h3 className="text-sm font-semibold text-loam truncate">
               {hotspot.area_name || 'Hotspot area'}
             </h3>
+            {hotspot.county && (
+              <p className="text-xs text-stone-400 truncate">{hotspot.county}</p>
+            )}
             <div className="flex items-center gap-3 mt-1.5 text-xs text-weathered">
               <span>{hotspot.report_count} reports</span>
               <span>{hotspot.volunteer_interest_count} interested</span>

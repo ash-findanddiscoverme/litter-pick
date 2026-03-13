@@ -89,35 +89,41 @@ export async function POST(request: NextRequest) {
   }
 }
 
+interface GeoResult {
+  area_name: string | null;
+  county: string | null;
+}
+
 /**
- * Reverse-geocode coordinates to a short place name using Nominatim.
- * Returns the road name, village/town, or nearest named place — or null on failure.
+ * Reverse-geocode coordinates to a short place name and county using Nominatim.
  */
-async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+async function reverseGeocode(lat: number, lng: number): Promise<GeoResult> {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16&addressdetails=1`;
     const res = await fetch(url, {
       headers: { 'User-Agent': 'LitterPick/1.0 (https://litterpick.org)' },
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { area_name: null, county: null };
     const data = await res.json();
     const addr = data.address;
-    if (!addr) return null;
+    if (!addr) return { area_name: null, county: null };
 
-    // Prefer: road → village → suburb → town → city
+    const county = addr.county || addr.state_district || addr.state || null;
+
     const road = addr.road || addr.footway || addr.path || addr.cycleway;
     const place = addr.village || addr.hamlet || addr.suburb || addr.town || addr.city;
 
-    if (road && place) return `${road}, ${place}`;
-    if (road) return road;
-    if (place) return place;
-    // Fallback to display_name trimmed to first two parts
-    if (data.display_name) {
-      return data.display_name.split(',').slice(0, 2).join(',').trim();
+    let area_name: string | null = null;
+    if (road && place) area_name = `${road}, ${place}`;
+    else if (road) area_name = road;
+    else if (place) area_name = place;
+    else if (data.display_name) {
+      area_name = data.display_name.split(',').slice(0, 2).join(',').trim();
     }
-    return null;
+
+    return { area_name, county };
   } catch {
-    return null;
+    return { area_name: null, county: null };
   }
 }
 
@@ -180,8 +186,10 @@ async function recalculateHotspots(
   if (existingHotspots && existingHotspots.length > 0) {
     // Update existing hotspot
     const hotspot = existingHotspots[0];
-    // Reverse-geocode if area_name is still missing
-    const areaName = hotspot.area_name || await reverseGeocode(centroidLat, centroidLng);
+    // Reverse-geocode if area_name or county is missing
+    const geo = (!hotspot.area_name || !hotspot.county)
+      ? await reverseGeocode(centroidLat, centroidLng)
+      : { area_name: null, county: null };
     await supabase
       .from('hotspots')
       .update({
@@ -191,7 +199,8 @@ async function recalculateHotspots(
         centroid_longitude: centroidLng,
         latest_before_image_url: latestBeforeImage || hotspot.latest_before_image_url,
         updated_at: new Date().toISOString(),
-        ...(areaName && !hotspot.area_name ? { area_name: areaName } : {}),
+        ...(!hotspot.area_name && geo.area_name ? { area_name: geo.area_name } : {}),
+        ...(!hotspot.county && geo.county ? { county: geo.county } : {}),
       })
       .eq('id', hotspot.id);
 
@@ -206,8 +215,8 @@ async function recalculateHotspots(
         .in('id', reportIds);
     }
   } else {
-    // Create new hotspot — reverse-geocode for a meaningful name
-    const newAreaName = await reverseGeocode(centroidLat, centroidLng);
+    // Create new hotspot — reverse-geocode for name and county
+    const newGeo = await reverseGeocode(centroidLat, centroidLng);
     const { data: newHotspot } = await supabase
       .from('hotspots')
       .insert({
@@ -218,7 +227,8 @@ async function recalculateHotspots(
         report_count: nearbyReports.length,
         volunteer_interest_count: 0,
         latest_before_image_url: latestBeforeImage,
-        area_name: newAreaName,
+        area_name: newGeo.area_name,
+        county: newGeo.county,
       })
       .select()
       .single();

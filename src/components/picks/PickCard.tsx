@@ -139,6 +139,9 @@ export default function PickCard({ pick, distanceKm }: PickCardProps) {
           <h3 className="text-base font-semibold text-loam">
             {pick.hotspot_name || 'Litter hotspot'}
           </h3>
+          {pick.hotspot_county && (
+            <p className="text-xs text-stone-400">{pick.hotspot_county}</p>
+          )}
           {pick.has_council && !pick.council_notified && !pick.council_collection_confirmed && (
             <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-xs font-medium rounded-full">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

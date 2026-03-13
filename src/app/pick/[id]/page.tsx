@@ -552,6 +552,9 @@ export default function CleanupPage() {
                 <h1 className="text-2xl font-bold text-loam">
                   {hotspot?.area_name || 'Litter Pick'}
                 </h1>
+                {hotspot?.county && (
+                  <p className="text-sm text-stone-500">{hotspot.county}</p>
+                )}
                 {cleanup.proposed_time && (
                   <p className="text-sm text-brand-500 font-medium mt-1">
                     <svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
