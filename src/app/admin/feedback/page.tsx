@@ -245,7 +245,7 @@ export default function AdminFeedbackPage() {
                       onBlur={(e) => {
                         const value = e.target.value.trim();
                         if (value !== (selectedFeedback.admin_notes || '')) {
-                          updateFeedback(selectedFeedback.id, { admin_notes: value || null });
+                          updateFeedback(selectedFeedback.id, { admin_notes: value || undefined });
                         }
                       }}
                     />
