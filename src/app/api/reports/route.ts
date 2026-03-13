@@ -132,7 +132,7 @@ async function recalculateHotspots(
   lng: number
 ) {
   const RADIUS_KM = 0.3;
-  const MIN_REPORTS = 2;
+  const MIN_REPORTS = 1;
   const RECENCY_DAYS = 30;
 
   const cutoffDate = new Date();

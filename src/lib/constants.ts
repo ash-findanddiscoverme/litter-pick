@@ -4,7 +4,7 @@ export const DEFAULT_ZOOM = 9;
 
 // Hotspot configuration
 export const HOTSPOT_RADIUS_KM = 0.3; // 300m radius for clustering reports
-export const HOTSPOT_MIN_REPORTS = 2; // Minimum reports to form a hotspot
+export const HOTSPOT_MIN_REPORTS = 1; // Minimum reports to form a hotspot
 export const HOTSPOT_VOLUNTEER_THRESHOLD = 3; // Volunteers needed to trigger "cleanup forming"
 export const REPORT_RECENCY_DAYS = 30; // Reports within this window count toward hotspots
 
