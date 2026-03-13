@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Overview', icon: 'grid' },
   { href: '/admin/users', label: 'Users', icon: 'users' },
   { href: '/admin/images', label: 'Images', icon: 'image' },
+  { href: '/admin/feedback', label: 'Feedback', icon: 'chat' },
 ];
 
 function NavIcon({ icon, className }: { icon: string; className?: string }) {
@@ -29,6 +30,12 @@ function NavIcon({ icon, className }: { icon: string; className?: string }) {
       return (
         <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M2.25 18.75h19.5M2.25 4.5h19.5v15h-19.5v-15z" />
+        </svg>
+      );
+    case 'chat':
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 21.192a5.971 5.971 0 01-2.743-.825 4.502 4.502 0 01-.213-7.485A8.258 8.258 0 012.25 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
         </svg>
       );
     default:

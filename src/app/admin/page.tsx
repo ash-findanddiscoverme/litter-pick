@@ -11,6 +11,8 @@ interface Stats {
   totalReportImages: number;
   totalAvatars: number;
   totalCleanupPhotos: number;
+  newFeedback: number;
+  totalFeedback: number;
 }
 
 export default function AdminOverview() {
@@ -20,15 +22,18 @@ export default function AdminOverview() {
   useEffect(() => {
     async function load() {
       try {
-        const [usersRes, imagesRes] = await Promise.all([
+        const [usersRes, imagesRes, feedbackRes] = await Promise.all([
           fetch('/api/admin/users'),
           fetch('/api/admin/images'),
+          fetch('/api/admin/feedback'),
         ]);
         const usersData = await usersRes.json();
         const imagesData = await imagesRes.json();
+        const feedbackData = await feedbackRes.json();
 
         const users = usersData.users || [];
         const images = imagesData.images || [];
+        const feedback = feedbackData.feedback || [];
 
         setStats({
           totalUsers: users.length,
@@ -37,6 +42,8 @@ export default function AdminOverview() {
           totalReportImages: images.filter((i: { source: string }) => i.source === 'report').length,
           totalAvatars: images.filter((i: { source: string }) => i.source === 'avatar').length,
           totalCleanupPhotos: images.filter((i: { source: string }) => i.source === 'cleanup').length,
+          newFeedback: feedback.filter((f: { status: string }) => f.status === 'new').length,
+          totalFeedback: feedback.length,
         });
       } catch {
         // silently fail
@@ -63,6 +70,8 @@ export default function AdminOverview() {
         { label: 'Report images', value: stats.totalReportImages, href: '/admin/images?source=report', color: 'text-brand-600' },
         { label: 'Avatars', value: stats.totalAvatars, href: '/admin/images?source=avatar', color: 'text-brand-600' },
         { label: 'Cleanup photos', value: stats.totalCleanupPhotos, href: '/admin/images?source=cleanup', color: 'text-brand-600' },
+        { label: 'New feedback', value: stats.newFeedback, href: '/admin/feedback?filter=new', color: 'text-blue-600' },
+        { label: 'Total feedback', value: stats.totalFeedback, href: '/admin/feedback', color: 'text-brand-600' },
       ]
     : [];
 

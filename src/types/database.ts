@@ -170,3 +170,17 @@ export interface QuestionWithAnswers extends CleanupQuestion {
     };
   }>;
 }
+
+export type FeedbackStatus = 'new' | 'reviewed' | 'actioned' | 'archived';
+
+export interface Feedback {
+  id: string;
+  user_id: string | null;
+  page_url: string;
+  message: string;
+  email: string | null;
+  status: FeedbackStatus;
+  created_at: string;
+  reviewed_at: string | null;
+  admin_notes: string | null;
+}
