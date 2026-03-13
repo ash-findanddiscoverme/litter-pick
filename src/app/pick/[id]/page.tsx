@@ -40,9 +40,11 @@ interface Organiser {
   avatar_url: string | null;
 }
 
-/** Inline map for pick detail */
-function PickMap({ lat, lng }: { lat: number; lng: number }) {
+/** Inline map for pick detail - shows meet point pin if set, otherwise hotspot */
+function PickMap({ lat, lng, meetLat, meetLng }: { lat: number; lng: number; meetLat?: number | null; meetLng?: number | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const displayLat = meetLat ?? lat;
+  const displayLng = meetLng ?? lng;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -50,22 +52,82 @@ function PickMap({ lat, lng }: { lat: number; lng: number }) {
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: MAP_STYLE_URL + key,
-      center: [lng, lat],
+      center: [displayLng, displayLat],
       zoom: 15,
       interactive: false,
       attributionControl: false,
     });
 
-    new maplibregl.Marker({ color: '#4AA853' })
-      .setLngLat([lng, lat])
+    new maplibregl.Marker({ color: meetLat ? '#2563EB' : '#4AA853' })
+      .setLngLat([displayLng, displayLat])
       .addTo(map);
 
     return () => { map.remove(); };
-  }, [lat, lng]);
+  }, [displayLat, displayLng, meetLat]);
 
   return (
     <div className="rounded-2xl overflow-hidden bg-stone-100" style={{ height: 180 }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
+}
+
+/** Interactive map for organiser to pick a meet location */
+function MeetLocationPicker({ initialLat, initialLng, onSelect, onCancel }: {
+  initialLat: number;
+  initialLng: number;
+  onSelect: (lat: number, lng: number) => void;
+  onCancel: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const markerRef = useRef<maplibregl.Marker | null>(null);
+  const selectedRef = useRef({ lat: initialLat, lng: initialLng });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const key = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: MAP_STYLE_URL + key,
+      center: [initialLng, initialLat],
+      zoom: 15,
+      attributionControl: false,
+    });
+
+    const marker = new maplibregl.Marker({ color: '#2563EB', draggable: true })
+      .setLngLat([initialLng, initialLat])
+      .addTo(map);
+    markerRef.current = marker;
+
+    marker.on('dragend', () => {
+      const lngLat = marker.getLngLat();
+      selectedRef.current = { lat: lngLat.lat, lng: lngLat.lng };
+    });
+
+    map.on('click', (e) => {
+      marker.setLngLat([e.lngLat.lng, e.lngLat.lat]);
+      selectedRef.current = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+    });
+
+    return () => { map.remove(); };
+  }, [initialLat, initialLng]);
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-2xl overflow-hidden bg-stone-100" style={{ height: 250 }}>
+        <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      </div>
+      <p className="text-xs text-stone-400 text-center">Tap the map or drag the pin to set the meet point</p>
+      <div className="flex gap-2">
+        <Button variant="ghost" onClick={onCancel} size="sm">Cancel</Button>
+        <Button
+          fullWidth
+          size="sm"
+          onClick={() => onSelect(selectedRef.current.lat, selectedRef.current.lng)}
+        >
+          Confirm meet point
+        </Button>
+      </div>
     </div>
   );
 }
@@ -98,6 +160,14 @@ export default function CleanupPage() {
   const [step, setStep] = useState<Step>('info');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // Meet location
+  const [meetLat, setMeetLat] = useState<number | null>(null);
+  const [meetLng, setMeetLng] = useState<number | null>(null);
+  const [meetInstructions, setMeetInstructions] = useState('');
+  const [showMeetPicker, setShowMeetPicker] = useState(false);
+  const [savingMeet, setSavingMeet] = useState(false);
+  const [editingMeetInstructions, setEditingMeetInstructions] = useState(false);
+
   // Equipment management
   const [equipmentProvision, setEquipmentProvision] = useState<EquipmentProvision>('volunteers');
   const [equipmentCounts, setEquipmentCounts] = useState({
@@ -107,6 +177,8 @@ export default function CleanupPage() {
     pickers: 0,
   });
   const [updatingEquipment, setUpdatingEquipment] = useState(false);
+  const [equipmentRequests, setEquipmentRequests] = useState<Record<string, number>>({});
+  const [myRequests, setMyRequests] = useState<Record<string, boolean>>({});
 
   // Event confirmation
   const [confirmingEvent, setConfirmingEvent] = useState(false);
@@ -140,6 +212,9 @@ export default function CleanupPage() {
             gloves: c.equipment_gloves_confirmed || 0,
             pickers: c.equipment_pickers_confirmed || 0,
           });
+          setMeetLat(c.meet_lat ?? null);
+          setMeetLng(c.meet_lng ?? null);
+          setMeetInstructions(c.meet_instructions || '');
         }
         setLoading(false);
       })
@@ -147,14 +222,36 @@ export default function CleanupPage() {
 
     fetch(`/api/cleanups/${id}/questions`)
       .then((r) => r.json())
+      .then((data) => { setQuestions(data.questions || []); })
+      .catch(() => {});
+
+    fetch(`/api/cleanups/${id}/equipment`)
+      .then((r) => r.json())
       .then((data) => {
-        setQuestions(data.questions || []);
+        const reqs = data.requests || [];
+        const counts: Record<string, number> = {};
+        const mine: Record<string, boolean> = {};
+        reqs.forEach((r: { item_type: string; user_id: string }) => {
+          counts[r.item_type] = (counts[r.item_type] || 0) + 1;
+        });
+        setEquipmentRequests(counts);
+        // We'll set myRequests after we know the userId
+        (window as unknown as Record<string, unknown>).__eqReqs = reqs;
       })
       .catch(() => {});
 
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      setCurrentUserId(data.user?.id || null);
+      const uid = data.user?.id || null;
+      setCurrentUserId(uid);
+      if (uid) {
+        const reqs = ((window as unknown as Record<string, unknown>).__eqReqs || []) as Array<{ item_type: string; user_id: string }>;
+        const mine: Record<string, boolean> = {};
+        reqs.forEach((r) => {
+          if (r.user_id === uid) mine[r.item_type] = true;
+        });
+        setMyRequests(mine);
+      }
     });
   }, [id]);
 
@@ -263,6 +360,67 @@ export default function CleanupPage() {
       setEquipmentCounts({ ...equipmentCounts, [item]: prev });
     } finally {
       setUpdatingEquipment(false);
+    }
+  };
+
+  const handleSaveMeetLocation = async (lat: number, lng: number) => {
+    setSavingMeet(true);
+    try {
+      await fetch(`/api/cleanups/${id}/equipment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meet_lat: lat, meet_lng: lng }),
+      });
+      setMeetLat(lat);
+      setMeetLng(lng);
+      setShowMeetPicker(false);
+    } catch {
+      // silent fail
+    } finally {
+      setSavingMeet(false);
+    }
+  };
+
+  const handleSaveMeetInstructions = async () => {
+    try {
+      await fetch(`/api/cleanups/${id}/equipment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meet_instructions: meetInstructions.trim() || null }),
+      });
+      setEditingMeetInstructions(false);
+    } catch {
+      // silent fail
+    }
+  };
+
+  const handleEquipmentRequest = async (itemType: string, action: 'request' | 'cancel') => {
+    const prev = { ...myRequests };
+    const prevCounts = { ...equipmentRequests };
+
+    if (action === 'request') {
+      setMyRequests({ ...myRequests, [itemType]: true });
+      setEquipmentRequests({ ...equipmentRequests, [itemType]: (equipmentRequests[itemType] || 0) + 1 });
+    } else {
+      const updated = { ...myRequests };
+      delete updated[itemType];
+      setMyRequests(updated);
+      setEquipmentRequests({ ...equipmentRequests, [itemType]: Math.max(0, (equipmentRequests[itemType] || 0) - 1) });
+    }
+
+    try {
+      const res = await fetch(`/api/cleanups/${id}/equipment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ equipment_request: { item_type: itemType, action } }),
+      });
+      if (!res.ok) {
+        setMyRequests(prev);
+        setEquipmentRequests(prevCounts);
+      }
+    } catch {
+      setMyRequests(prev);
+      setEquipmentRequests(prevCounts);
     }
   };
 
@@ -417,27 +575,100 @@ export default function CleanupPage() {
                 </div>
               </div>
 
-              {/* Map */}
-              {hotspot && (
+              {/* Map / Meet Location */}
+              {hotspot && !showMeetPicker && (
                 <div className="space-y-2">
-                  <PickMap lat={hotspot.centroid_latitude} lng={hotspot.centroid_longitude} />
+                  <PickMap
+                    lat={hotspot.centroid_latitude}
+                    lng={hotspot.centroid_longitude}
+                    meetLat={meetLat}
+                    meetLng={meetLng}
+                  />
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-stone-400 font-mono">
-                      {hotspot.centroid_latitude.toFixed(5)}, {hotspot.centroid_longitude.toFixed(5)}
-                    </p>
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${hotspot.centroid_latitude},${hotspot.centroid_longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-600 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                      </svg>
-                      Get directions
-                    </a>
+                    <div>
+                      {meetLat && meetLng ? (
+                        <p className="text-xs text-blue-600 font-medium">
+                          <svg className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                          </svg>
+                          Meet point set
+                        </p>
+                      ) : (
+                        <p className="text-xs text-stone-400 font-mono">
+                          {hotspot.centroid_latitude.toFixed(5)}, {hotspot.centroid_longitude.toFixed(5)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {currentUserId === organiser?.id && (
+                        <button
+                          onClick={() => setShowMeetPicker(true)}
+                          className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                          {meetLat ? 'Change meet point' : 'Set meet point'}
+                        </button>
+                      )}
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${meetLat ?? hotspot.centroid_latitude},${meetLng ?? hotspot.centroid_longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-600 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                        </svg>
+                        Directions
+                      </a>
+                    </div>
                   </div>
+
+                  {/* Meet instructions */}
+                  {meetLat && meetLng && (
+                    <div className="bg-blue-50 rounded-lg px-3 py-2.5">
+                      {editingMeetInstructions && currentUserId === organiser?.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={meetInstructions}
+                            onChange={(e) => setMeetInstructions(e.target.value)}
+                            placeholder="e.g. Meet at the park entrance by the car park"
+                            rows={2}
+                            maxLength={300}
+                            className="w-full px-2 py-1.5 text-sm border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <button onClick={() => setEditingMeetInstructions(false)} className="text-xs text-stone-500 hover:text-stone-700">Cancel</button>
+                            <button onClick={handleSaveMeetInstructions} className="text-xs font-medium text-blue-600 hover:text-blue-700">Save</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs text-blue-800">
+                            {meetInstructions || (currentUserId === organiser?.id ? 'Add meet instructions...' : 'No meet instructions provided')}
+                          </p>
+                          {currentUserId === organiser?.id && (
+                            <button
+                              onClick={() => setEditingMeetInstructions(true)}
+                              className="text-xs text-blue-600 hover:text-blue-700 shrink-0"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+              )}
+
+              {/* Meet location picker - organiser only */}
+              {hotspot && showMeetPicker && (
+                <MeetLocationPicker
+                  initialLat={meetLat ?? hotspot.centroid_latitude}
+                  initialLng={meetLng ?? hotspot.centroid_longitude}
+                  onSelect={(lat, lng) => handleSaveMeetLocation(lat, lng)}
+                  onCancel={() => setShowMeetPicker(false)}
+                />
               )}
 
               {/* Stats */}
@@ -536,10 +767,10 @@ export default function CleanupPage() {
                   Pick Equipment
                 </h3>
 
-                {/* Equipment provision toggle - organiser only */}
+                {/* Organiser: toggle provision mode */}
                 {currentUserId === organiser?.id && (
                   <div className="mb-4 p-3 bg-stone-50 rounded-lg">
-                    <p className="text-xs font-medium text-weathered mb-2">Equipment will be provided by:</p>
+                    <p className="text-xs font-medium text-weathered mb-2">Equipment provided?</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEquipmentProvisionChange('volunteers')}
@@ -549,7 +780,7 @@ export default function CleanupPage() {
                             : 'bg-white text-weathered border border-stone-200 hover:border-stone-300'
                         }`}
                       >
-                        Volunteers bring own
+                        Not provided
                       </button>
                       <button
                         onClick={() => handleEquipmentProvisionChange('organiser')}
@@ -559,13 +790,13 @@ export default function CleanupPage() {
                             : 'bg-white text-weathered border border-stone-200 hover:border-stone-300'
                         }`}
                       >
-                        Organiser/Council provides
+                        Equipment provided
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* Equipment provision info for non-organisers */}
+                {/* Non-organiser info banner */}
                 {currentUserId !== organiser?.id && (
                   <div className="mb-4 p-3 bg-stone-50 rounded-lg">
                     <p className="text-xs text-weathered">
@@ -576,49 +807,125 @@ export default function CleanupPage() {
                   </div>
                 )}
 
-                {/* Equipment counts with organiser controls */}
-                <div className="space-y-2">
-                  {[
-                    { key: 'bags' as const, label: 'Bags', icon: '🛍️' },
-                    { key: 'hoops' as const, label: 'Bag hoops', icon: '⭕' },
-                    { key: 'gloves' as const, label: 'Gloves', icon: '🧤' },
-                    { key: 'pickers' as const, label: 'Litter pickers', icon: '🔧' },
-                  ].map(({ key, label, icon }) => (
-                    <div key={key} className="flex items-center justify-between py-2 px-3 bg-stone-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{icon}</span>
-                        <span className="text-sm font-medium text-loam">{label}</span>
+                {/* Organiser provided equipment - amounts */}
+                {equipmentProvision === 'organiser' && (
+                  <div className="space-y-2 mb-4">
+                    <p className="text-xs font-medium text-weathered">Available equipment:</p>
+                    {[
+                      { key: 'bags' as const, label: 'Bags', icon: '🛍️' },
+                      { key: 'hoops' as const, label: 'Bag hoops', icon: '⭕' },
+                      { key: 'gloves' as const, label: 'Gloves', icon: '🧤' },
+                      { key: 'pickers' as const, label: 'Litter pickers', icon: '🔧' },
+                    ].map(({ key, label, icon }) => (
+                      <div key={key} className="flex items-center justify-between py-2 px-3 bg-stone-50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{icon}</span>
+                          <span className="text-sm font-medium text-loam">{label}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {currentUserId === organiser?.id && (
+                            <button
+                              onClick={() => handleEquipmentCountChange(key, -1)}
+                              disabled={updatingEquipment || equipmentCounts[key] === 0}
+                              className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-stone-200 text-stone-500 hover:bg-stone-100 disabled:opacity-40"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
+                              </svg>
+                            </button>
+                          )}
+                          <span className="w-8 text-center text-sm font-semibold text-loam">
+                            {equipmentCounts[key]}
+                          </span>
+                          {currentUserId === organiser?.id && (
+                            <button
+                              onClick={() => handleEquipmentCountChange(key, 1)}
+                              disabled={updatingEquipment}
+                              className="w-7 h-7 flex items-center justify-center rounded-full bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-40"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {currentUserId === organiser?.id && (
-                          <button
-                            onClick={() => handleEquipmentCountChange(key, -1)}
-                            disabled={updatingEquipment || equipmentCounts[key] === 0}
-                            className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-stone-200 text-stone-500 hover:bg-stone-100 disabled:opacity-40"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
-                            </svg>
-                          </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Volunteer's own equipment + request section */}
+                {currentUserId && currentUserId !== organiser?.id && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-weathered">Your equipment:</p>
+                    {volunteers.filter((v) => v.id === currentUserId).map((v) => (
+                      <div key="my-equipment">
+                        <EquipmentIcons equipment={{
+                          equipment_bags: v.equipment_bags,
+                          equipment_bag_hoop: v.equipment_bag_hoop,
+                          equipment_gloves: v.equipment_gloves,
+                          equipment_litter_picker: v.equipment_litter_picker,
+                        }} />
+                        {!v.equipment_bags && !v.equipment_bag_hoop && !v.equipment_gloves && !v.equipment_litter_picker && (
+                          <p className="text-xs text-stone-400">
+                            <a href="/profile/settings" className="text-brand-500 hover:underline">Update your equipment</a> in your profile
+                          </p>
                         )}
-                        <span className="w-8 text-center text-sm font-semibold text-loam">
-                          {equipmentCounts[key]}
-                        </span>
-                        {currentUserId === organiser?.id && (
-                          <button
-                            onClick={() => handleEquipmentCountChange(key, 1)}
-                            disabled={updatingEquipment}
-                            className="w-7 h-7 flex items-center justify-center rounded-full bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-40"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                          </button>
-                        )}
+                      </div>
+                    ))}
+
+                    {/* Request equipment */}
+                    <div className="mt-3 pt-3 border-t border-stone-100">
+                      <p className="text-xs font-medium text-weathered mb-2">Need equipment for this pick?</p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { key: 'bags', label: 'Bags' },
+                          { key: 'hoops', label: 'Hoop' },
+                          { key: 'gloves', label: 'Gloves' },
+                          { key: 'pickers', label: 'Picker' },
+                        ].map(({ key, label }) => {
+                          const requested = !!myRequests[key];
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => handleEquipmentRequest(key, requested ? 'cancel' : 'request')}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                                requested
+                                  ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-300'
+                                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                              }`}
+                            >
+                              {requested ? `${label} requested` : `Request ${label.toLowerCase()}`}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {/* Organiser: see equipment requests */}
+                {currentUserId === organiser?.id && Object.keys(equipmentRequests).some((k) => (equipmentRequests[k] || 0) > 0) && (
+                  <div className="mt-4 pt-3 border-t border-stone-100">
+                    <p className="text-xs font-medium text-weathered mb-2">Equipment requests from volunteers:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { key: 'bags', label: 'Bags' },
+                        { key: 'hoops', label: 'Hoops' },
+                        { key: 'gloves', label: 'Gloves' },
+                        { key: 'pickers', label: 'Pickers' },
+                      ].map(({ key, label }) => {
+                        const count = equipmentRequests[key] || 0;
+                        if (count === 0) return null;
+                        return (
+                          <span key={key} className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full">
+                            {label}: {count} requested
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </Card>
 
               {/* Notes */}

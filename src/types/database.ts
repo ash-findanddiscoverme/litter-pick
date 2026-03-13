@@ -91,6 +91,18 @@ export interface Cleanup {
   equipment_pickers_confirmed?: number | null;
   event_confirmed?: boolean | null;
   after_photos?: string[] | null;
+  meet_lat?: number | null;
+  meet_lng?: number | null;
+  meet_instructions?: string | null;
+}
+
+export interface EquipmentRequest {
+  id: string;
+  cleanup_id: string;
+  user_id: string;
+  item_type: 'bags' | 'hoops' | 'gloves' | 'pickers';
+  status: 'requested' | 'confirmed' | 'declined';
+  created_at: string;
 }
 
 export interface CleanupPhoto {
