@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -45,24 +44,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.replace('/login');
-        return;
-      }
-      fetch('/api/admin/check')
-        .then((r) => r.json())
-        .then((d) => {
-          if (!d.isAdmin) {
-            router.replace('/');
-          } else {
-            setAuthorized(true);
-          }
-        })
-        .catch(() => router.replace('/'))
-        .finally(() => setLoading(false));
-    });
+    fetch('/api/admin/check')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.isAdmin) {
+          router.replace(d.isAdmin === false ? '/' : '/login');
+        } else {
+          setAuthorized(true);
+        }
+      })
+      .catch(() => router.replace('/login'))
+      .finally(() => setLoading(false));
   }, [router]);
 
   if (loading || !authorized) {

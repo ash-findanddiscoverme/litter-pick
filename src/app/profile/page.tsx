@@ -84,40 +84,43 @@ export default function ProfilePage() {
   const loadProfile = () => {
     setLoading(true);
     setError(null);
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push('/login');
-        return;
-      }
 
-      fetch('/api/auth/profile')
-        .then((r) => {
-          if (!r.ok) throw new Error('Failed to load profile');
-          return r.json();
-        })
-        .then((data) => {
-          if (data?.user) {
-            setProfile(data);
-          } else {
-            setError('Could not load profile data');
-          }
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err.message || 'Something went wrong');
-          setLoading(false);
-        });
-    });
+    fetch('/api/auth/profile')
+      .then((r) => {
+        if (r.status === 401) {
+          router.push('/login');
+          return null;
+        }
+        if (!r.ok) throw new Error('Failed to load profile');
+        return r.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        if (data?.user) {
+          setProfile(data);
+        } else {
+          setError('Could not load profile data');
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || 'Something went wrong');
+        setLoading(false);
+      });
   };
 
   useEffect(() => {
     loadProfile();
+  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Defer admin check — low priority, only affects a small UI element
+  useEffect(() => {
+    if (!profile) return;
     fetch('/api/admin/check')
       .then((r) => r.json())
       .then((data) => setIsAdmin(data.isAdmin === true))
       .catch(() => {});
-  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   // Fit the profile map to show the full volunteer circle
   useEffect(() => {

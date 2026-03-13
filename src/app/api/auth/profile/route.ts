@@ -68,43 +68,47 @@ export async function GET() {
       });
     }
 
-    // Fetch stats
-    const { count: interestsCount } = await serviceClient
-      .from('volunteer_interests')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
+    // Run independent queries in parallel instead of sequentially
+    const [interestsResult, reportsResult] = await Promise.all([
+      serviceClient
+        .from('volunteer_interests')
+        .select('hotspot_id')
+        .eq('user_id', user.id),
+      serviceClient
+        .from('reports')
+        .select('id, image_url, severity, submitted_at, latitude, longitude, hotspot_id')
+        .eq('user_id', user.id)
+        .not('image_url', 'is', null)
+        .order('submitted_at', { ascending: false })
+        .limit(20),
+    ]);
 
-    const { data: completedCleanups } = await serviceClient
-      .from('cleanups')
-      .select('hotspot_id')
-      .eq('status', 'completed')
-      .in('hotspot_id',
-        (await serviceClient
-          .from('volunteer_interests')
-          .select('hotspot_id')
-          .eq('user_id', user.id)
-        ).data?.map((i: { hotspot_id: string }) => i.hotspot_id) || []
-      );
+    const interests = interestsResult.data || [];
+    const userReports = reportsResult.data || [];
 
-    const uniqueAreas = new Set(completedCleanups?.map((c: { hotspot_id: string }) => c.hotspot_id) || []);
+    // Use interests data for both count and hotspot ID lookup (avoids duplicate query)
+    const hotspotIds = interests.map((i: { hotspot_id: string }) => i.hotspot_id);
 
-    // Fetch user's reports (most recent first, only ones with photos)
-    const { data: userReports } = await serviceClient
-      .from('reports')
-      .select('id, image_url, severity, submitted_at, latitude, longitude, hotspot_id')
-      .eq('user_id', user.id)
-      .not('image_url', 'is', null)
-      .order('submitted_at', { ascending: false })
-      .limit(20);
+    let completedCleanups: { hotspot_id: string }[] = [];
+    if (hotspotIds.length > 0) {
+      const { data } = await serviceClient
+        .from('cleanups')
+        .select('hotspot_id')
+        .eq('status', 'completed')
+        .in('hotspot_id', hotspotIds);
+      completedCleanups = data || [];
+    }
+
+    const uniqueAreas = new Set(completedCleanups.map((c) => c.hotspot_id));
 
     return NextResponse.json({
       user: profile,
       stats: {
-        cleanups_joined: interestsCount || 0,
-        cleanups_completed: completedCleanups?.length || 0,
+        cleanups_joined: interests.length,
+        cleanups_completed: completedCleanups.length,
         areas_helped: uniqueAreas.size,
       },
-      reports: userReports || [],
+      reports: userReports,
     });
   } catch (err) {
     console.error('Profile error:', err);

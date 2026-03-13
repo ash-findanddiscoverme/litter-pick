@@ -31,26 +31,26 @@ export default function SettingsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push('/login');
-        return;
-      }
-      fetch('/api/auth/profile')
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.user) {
-            setVolunteerType(data.user.volunteer_type || 'solo');
-            setOriginalType(data.user.volunteer_type || 'solo');
-          }
-          setLoading(false);
-        })
-        .catch(() => {
-          setError('Failed to load settings');
-          setLoading(false);
-        });
-    });
+    fetch('/api/auth/profile')
+      .then((r) => {
+        if (r.status === 401) {
+          router.push('/login');
+          return null;
+        }
+        return r.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        if (data?.user) {
+          setVolunteerType(data.user.volunteer_type || 'solo');
+          setOriginalType(data.user.volunteer_type || 'solo');
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Failed to load settings');
+        setLoading(false);
+      });
   }, [router]);
 
   const handleSaveType = async () => {

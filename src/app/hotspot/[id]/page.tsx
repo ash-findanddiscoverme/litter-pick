@@ -47,13 +47,16 @@ export default function HotspotDetailPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  }, [id]);
 
-    // Check admin status
+  // Defer admin check — only affects edit/delete buttons, not critical for render
+  useEffect(() => {
+    if (!hotspot) return;
     fetch('/api/admin/check')
       .then((r) => r.json())
       .then((data) => setIsAdmin(data.isAdmin === true))
       .catch(() => {});
-  }, [id]);
+  }, [hotspot]);
 
   // Dynamic page title and meta description
   useEffect(() => {

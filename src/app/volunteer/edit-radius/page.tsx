@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import RadiusSetup from '@/components/volunteer/RadiusSetup';
-import { createClient } from '@/lib/supabase/client';
 
 export default function EditRadiusPage() {
   const [postcode, setPostcode] = useState<string | null>(null);
@@ -15,34 +14,31 @@ export default function EditRadiusPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push('/login');
-        return;
-      }
-
-      fetch('/api/auth/profile')
-        .then((r) => {
-          if (!r.ok) throw new Error('Not authenticated');
-          return r.json();
-        })
-        .then((data) => {
-          if (data?.user) {
-            setPostcode(data.user.postcode_or_town || '');
-            if (data.user.volunteer_radius_km) {
-              setExistingRadius(data.user.volunteer_radius_km);
-            }
-            if (data.user.volunteer_lat && data.user.volunteer_lng) {
-              setExistingCenter([data.user.volunteer_lng, data.user.volunteer_lat]);
-            }
-          }
-          setLoading(false);
-        })
-        .catch(() => {
+    fetch('/api/auth/profile')
+      .then((r) => {
+        if (r.status === 401) {
           router.push('/login');
-        });
-    });
+          return null;
+        }
+        if (!r.ok) throw new Error('Not authenticated');
+        return r.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        if (data?.user) {
+          setPostcode(data.user.postcode_or_town || '');
+          if (data.user.volunteer_radius_km) {
+            setExistingRadius(data.user.volunteer_radius_km);
+          }
+          if (data.user.volunteer_lat && data.user.volunteer_lng) {
+            setExistingCenter([data.user.volunteer_lng, data.user.volunteer_lat]);
+          }
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        router.push('/login');
+      });
   }, [router]);
 
   if (loading) {
