@@ -18,9 +18,9 @@ const PROFANITY_VARIATIONS: Record<string, string[]> = {
   cunt: ['c*nt', 'cvnt'],
 };
 
-const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi;
-const PHONE_REGEX = /(?:\+44|0)[\s.-]?(?:\d[\s.-]?){9,10}/g;
-const UK_POSTCODE_REGEX = /[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}/gi;
+const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i;
+const PHONE_REGEX = /(?:\+44|0)[\s.-]?(?:\d[\s.-]?){9,10}/;
+const UK_POSTCODE_REGEX = /[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}/i;
 
 interface ModerationResult {
   isClean: boolean;
