@@ -13,7 +13,13 @@ export default function LandingPage() {
           <div className="relative w-full">
             <img
               src="/hero.webp"
+              srcSet="/hero-480w.webp 480w, /hero-768w.webp 768w, /hero-1024w.webp 1024w, /hero.webp 1920w"
+              sizes="100vw"
               alt="Oxfordshire countryside at golden hour"
+              width={1920}
+              height={1279}
+              fetchPriority="high"
+              decoding="async"
               className="w-full h-64 sm:h-80 md:h-[28rem] lg:h-[32rem] object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
@@ -108,7 +114,13 @@ export default function LandingPage() {
                   {item.image && (
                     <img
                       src={item.image}
+                      srcSet={`${item.image.replace('.webp', '-332w.webp')} 332w, ${item.image} 800w`}
+                      sizes="(min-width: 768px) 33vw, 100vw"
                       alt={item.imageAlt}
+                      width={800}
+                      height={800}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full aspect-square object-cover rounded-xl mt-4"
                     />
                   )}
