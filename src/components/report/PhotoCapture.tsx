@@ -13,37 +13,14 @@ export default function PhotoCapture({ onPhotoSelected, preview, className }: Ph
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [moderationError, setModerationError] = useState<string | null>(null);
 
-  const handleFile = async (file: File) => {
+  const handleFile = (file: File) => {
     if (!file || !file.type.startsWith('image/')) return;
-
-    setChecking(true);
-    setModerationError(null);
-
-    try {
-      const { checkImageSafety } = await import('@/lib/moderation');
-      const result = await checkImageSafety(file);
-      if (!result.safe) {
-        setModerationError(result.reason || 'This image was flagged as inappropriate.');
-        // Reset file inputs so user can try again
-        if (cameraRef.current) cameraRef.current.value = '';
-        if (galleryRef.current) galleryRef.current.value = '';
-        return;
-      }
-      onPhotoSelected(file);
-    } catch {
-      // If moderation fails, allow the upload
-      onPhotoSelected(file);
-    } finally {
-      setChecking(false);
-    }
+    onPhotoSelected(file);
   };
 
   return (
     <div className={cn('space-y-2', className)}>
-      {/* Camera input — forces camera on mobile */}
       <input
         ref={cameraRef}
         type="file"
@@ -55,7 +32,6 @@ export default function PhotoCapture({ onPhotoSelected, preview, className }: Ph
           if (file) handleFile(file);
         }}
       />
-      {/* Gallery input — no capture attr, opens photo library */}
       <input
         ref={galleryRef}
         type="file"
@@ -67,27 +43,6 @@ export default function PhotoCapture({ onPhotoSelected, preview, className }: Ph
         }}
       />
 
-      {/* Moderation error banner */}
-      {moderationError && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-          <svg className="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-          </svg>
-          <span>{moderationError}</span>
-        </div>
-      )}
-
-      {/* Checking overlay */}
-      {checking && (
-        <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-700 flex items-center gap-2">
-          <svg className="animate-spin w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          Checking image...
-        </div>
-      )}
-
       {preview ? (
         <div className="relative">
           <img
@@ -98,15 +53,13 @@ export default function PhotoCapture({ onPhotoSelected, preview, className }: Ph
           <div className="absolute bottom-3 right-3 flex gap-2">
             <button
               onClick={() => cameraRef.current?.click()}
-              disabled={checking}
-              className="bg-white/90 backdrop-blur-sm rounded-xl px-3 py-1.5 text-xs font-medium text-loam shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+              className="bg-white/90 backdrop-blur-sm rounded-xl px-3 py-1.5 text-xs font-medium text-loam shadow-sm hover:bg-white transition-colors"
             >
               Retake
             </button>
             <button
               onClick={() => galleryRef.current?.click()}
-              disabled={checking}
-              className="bg-white/90 backdrop-blur-sm rounded-xl px-3 py-1.5 text-xs font-medium text-loam shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+              className="bg-white/90 backdrop-blur-sm rounded-xl px-3 py-1.5 text-xs font-medium text-loam shadow-sm hover:bg-white transition-colors"
             >
               Upload
             </button>
@@ -141,8 +94,7 @@ export default function PhotoCapture({ onPhotoSelected, preview, className }: Ph
               <button
                 type="button"
                 onClick={() => cameraRef.current?.click()}
-                disabled={checking}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brand-500 text-white rounded-xl text-sm font-semibold hover:bg-brand-600 transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brand-500 text-white rounded-xl text-sm font-semibold hover:bg-brand-600 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
@@ -153,8 +105,7 @@ export default function PhotoCapture({ onPhotoSelected, preview, className }: Ph
               <button
                 type="button"
                 onClick={() => galleryRef.current?.click()}
-                disabled={checking}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white text-loam rounded-xl text-sm font-semibold border border-stone-200 hover:bg-stone-50 transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white text-loam rounded-xl text-sm font-semibold border border-stone-200 hover:bg-stone-50 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
