@@ -28,7 +28,7 @@ export async function GET(
       return NextResponse.json({ questions: [] });
     }
 
-    const userIds = [...new Set(questions.map((q) => q.user_id))];
+    const userIds = Array.from(new Set(questions.map((q) => q.user_id)));
     const { data: users } = await supabase
       .from('users')
       .select('id, first_name, avatar_url')
@@ -44,7 +44,7 @@ export async function GET(
       .eq('is_hidden', false)
       .order('created_at', { ascending: true });
 
-    const answerUserIds = [...new Set((answers || []).map((a) => a.user_id))];
+    const answerUserIds = Array.from(new Set((answers || []).map((a) => a.user_id)));
     const additionalUserIds = answerUserIds.filter((id) => !userMap.has(id));
     if (additionalUserIds.length > 0) {
       const { data: additionalUsers } = await supabase

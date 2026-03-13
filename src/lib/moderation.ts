@@ -102,8 +102,8 @@ export function moderateContent(text: string): ModerationResult {
 
   return {
     isClean: reasons.length === 0,
-    reasons: [...new Set(reasons)],
-    flaggedWords: [...new Set(flaggedWords)],
+    reasons: Array.from(new Set(reasons)),
+    flaggedWords: Array.from(new Set(flaggedWords)),
   };
 }
 
