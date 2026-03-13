@@ -1,112 +1,122 @@
 /**
- * Client-side image moderation using NSFWJS (TensorFlow.js).
- * Runs entirely in the browser — no server calls, no data leaves the device.
- *
- * Loaded from CDN at runtime to avoid bundling TensorFlow (~24MB) into
- * the edge function output, which has a 4MB limit on Cloudflare Pages.
- *
- * Categories: Drawing, Hentai, Neutral, Porn, Sexy
- * We reject images where Porn + Hentai + Sexy combined confidence > 0.60
+ * Content moderation utilities for filtering inappropriate content.
+ * Checks for profanity, personal information, and rude sentiment.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+const PROFANITY_LIST = [
+  'fuck', 'shit', 'ass', 'damn', 'bitch', 'bastard', 'crap', 'piss',
+  'dick', 'cock', 'pussy', 'cunt', 'whore', 'slut', 'fag', 'nigger',
+  'retard', 'twat', 'wanker', 'bollocks', 'arse', 'bugger', 'bloody',
+  'tosser', 'prick', 'bellend', 'knob', 'git', 'minger', 'slag',
+];
 
-let modelPromise: Promise<any> | null = null;
+const PROFANITY_VARIATIONS: Record<string, string[]> = {
+  fuck: ['f*ck', 'fck', 'fuk', 'fu*k', 'f**k', 'fvck', 'phuck'],
+  shit: ['sh*t', 'sht', 'sh1t', 's**t', 'shyt'],
+  ass: ['a$$', 'a**', '@ss', '@$$'],
+  bitch: ['b*tch', 'b1tch', 'biatch'],
+  cunt: ['c*nt', 'cvnt'],
+};
 
-/** Load a script from CDN and return when ready */
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load ${src}`));
-    document.head.appendChild(script);
-  });
+const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi;
+const PHONE_REGEX = /(?:\+44|0)[\s.-]?(?:\d[\s.-]?){9,10}/g;
+const UK_POSTCODE_REGEX = /[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}/gi;
+
+interface ModerationResult {
+  isClean: boolean;
+  reasons: string[];
+  flaggedWords: string[];
 }
 
-/** Lazy-load TF.js + NSFWJS from CDN, then load model (~4MB, cached) */
-async function getModel(): Promise<any> {
-  if (!modelPromise) {
-    modelPromise = (async () => {
-      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js');
-      await loadScript('https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js');
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[0-9]/g, (d) => {
+      const map: Record<string, string> = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b' };
+      return map[d] || d;
+    })
+    .replace(/[^a-z\s]/g, '');
+}
 
-      const nsfwjs = (window as any).nsfwjs;
-      if (!nsfwjs) throw new Error('NSFWJS failed to load from CDN');
+export function moderateContent(text: string): ModerationResult {
+  const reasons: string[] = [];
+  const flaggedWords: string[] = [];
 
-      const model = await nsfwjs.load('https://nsfwjs.com/quant_mid/', { size: 224 });
-      return model;
-    })();
+  if (!text || text.trim().length === 0) {
+    return { isClean: true, reasons: [], flaggedWords: [] };
   }
-  return modelPromise;
-}
 
-export interface ModerationResult {
-  safe: boolean;
-  /** Short user-facing reason if blocked */
-  reason?: string;
-  /** Raw category scores for debugging */
-  scores?: Record<string, number>;
-}
+  const normalizedText = normalizeText(text);
+  const words = normalizedText.split(/\s+/);
 
-/**
- * Check whether an image file is safe to upload.
- * Loads the image into an HTMLImageElement for TF.js classification.
- */
-export async function checkImageSafety(file: File): Promise<ModerationResult> {
-  try {
-    const model = await getModel();
-
-    // Create an Image element for classification
-    const img = await fileToImage(file);
-    const predictions = await model.classify(img);
-
-    // Build scores map
-    const scores: Record<string, number> = {};
-    for (const p of predictions) {
-      scores[p.className] = p.probability;
+  for (const word of words) {
+    if (PROFANITY_LIST.includes(word)) {
+      flaggedWords.push(word);
     }
-
-    const unsafeScore =
-      (scores['Porn'] || 0) +
-      (scores['Hentai'] || 0) +
-      (scores['Sexy'] || 0);
-
-    if (unsafeScore > 0.60) {
-      return {
-        safe: false,
-        reason: 'This image appears to contain inappropriate content. Please upload a photo of litter instead.',
-        scores,
-      };
-    }
-
-    return { safe: true, scores };
-  } catch (err) {
-    // If moderation fails (e.g. model didn't load), allow the upload
-    // rather than blocking users. Log for debugging.
-    console.warn('Image moderation check failed, allowing upload:', err);
-    return { safe: true };
   }
+
+  for (const [base, variations] of Object.entries(PROFANITY_VARIATIONS)) {
+    const lowerText = text.toLowerCase();
+    for (const variant of variations) {
+      if (lowerText.includes(variant)) {
+        flaggedWords.push(base);
+      }
+    }
+  }
+
+  for (const profanity of PROFANITY_LIST) {
+    if (normalizedText.includes(profanity) && !flaggedWords.includes(profanity)) {
+      flaggedWords.push(profanity);
+    }
+  }
+
+  if (flaggedWords.length > 0) {
+    reasons.push('Contains inappropriate language');
+  }
+
+  if (EMAIL_REGEX.test(text)) {
+    reasons.push('Contains email address');
+  }
+
+  if (PHONE_REGEX.test(text)) {
+    reasons.push('Contains phone number');
+  }
+
+  if (UK_POSTCODE_REGEX.test(text)) {
+    reasons.push('Contains postcode');
+  }
+
+  const aggressivePatterns = [
+    /\bi\s*(will\s+)?(kill|hurt|attack)\s+(you|them|him|her)/i,
+    /\b(die|death)\s+(to\s+)?(you|them)/i,
+    /\b(go\s+)?kill\s+yourself/i,
+    /\byou('re|\s+are)\s+(stupid|dumb|idiot|moron)/i,
+  ];
+
+  for (const pattern of aggressivePatterns) {
+    if (pattern.test(text)) {
+      reasons.push('Contains aggressive or threatening language');
+      break;
+    }
+  }
+
+  return {
+    isClean: reasons.length === 0,
+    reasons: [...new Set(reasons)],
+    flaggedWords: [...new Set(flaggedWords)],
+  };
 }
 
-/** Convert a File to an HTMLImageElement */
-function fileToImage(file: File): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      URL.revokeObjectURL(img.src);
-      resolve(img);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(img.src);
-      reject(new Error('Failed to load image for moderation'));
-    };
-    img.src = URL.createObjectURL(file);
-  });
+export function sanitizeForDisplay(text: string): string {
+  let sanitized = text;
+
+  for (const profanity of PROFANITY_LIST) {
+    const regex = new RegExp(`\\b${profanity}\\b`, 'gi');
+    sanitized = sanitized.replace(regex, '*'.repeat(profanity.length));
+  }
+
+  sanitized = sanitized.replace(EMAIL_REGEX, '[email hidden]');
+  sanitized = sanitized.replace(PHONE_REGEX, '[phone hidden]');
+
+  return sanitized;
 }

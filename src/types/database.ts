@@ -135,3 +135,36 @@ export interface CleanupCompletionInput {
   bags_collected?: number;
   volunteer_count?: number;
 }
+
+export interface CleanupQuestion {
+  id: string;
+  cleanup_id: string;
+  user_id: string;
+  question: string;
+  created_at: string;
+  is_hidden: boolean;
+}
+
+export interface CleanupAnswer {
+  id: string;
+  question_id: string;
+  user_id: string;
+  answer: string;
+  created_at: string;
+  is_hidden: boolean;
+}
+
+export interface QuestionWithAnswers extends CleanupQuestion {
+  user: {
+    id: string;
+    first_name: string;
+    avatar_url: string | null;
+  };
+  answers: Array<CleanupAnswer & {
+    user: {
+      id: string;
+      first_name: string;
+      avatar_url: string | null;
+    };
+  }>;
+}

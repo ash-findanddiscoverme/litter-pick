@@ -17,8 +17,9 @@ import { MAP_STYLE_URL } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
 import CouncilSection from '@/components/picks/CouncilSection';
 import ShareButton from '@/components/ui/ShareButton';
+import QASection from '@/components/picks/QASection';
 import { EquipmentIcons, EquipmentSummary } from '@/components/profile/EquipmentSection';
-import type { Cleanup, Hotspot } from '@/types/database';
+import type { Cleanup, Hotspot, QuestionWithAnswers } from '@/types/database';
 
 export const runtime = 'edge';
 
@@ -78,6 +79,7 @@ export default function CleanupPage() {
   const [hotspot, setHotspot] = useState<Hotspot | null>(null);
   const [organiser, setOrganiser] = useState<Organiser | null>(null);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [questions, setQuestions] = useState<QuestionWithAnswers[]>([]);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<Step>('info');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -103,7 +105,13 @@ export default function CleanupPage() {
       })
       .catch(() => setLoading(false));
 
-    // Get current user for organiser check
+    fetch(`/api/cleanups/${id}/questions`)
+      .then((r) => r.json())
+      .then((data) => {
+        setQuestions(data.questions || []);
+      })
+      .catch(() => {});
+
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id || null);
@@ -387,6 +395,16 @@ export default function CleanupPage() {
                   <p className="text-sm text-loam">{cleanup.notes}</p>
                 </Card>
               )}
+
+              {/* Q&A Section */}
+              <QASection
+                cleanupId={id}
+                questions={questions}
+                currentUserId={currentUserId}
+                isOrganiser={!!currentUserId && currentUserId === organiser?.id}
+                isParticipant={!!currentUserId && volunteers.some((v) => v.id === currentUserId)}
+                onQuestionsUpdate={setQuestions}
+              />
 
               {/* Action buttons */}
               {cleanup.status !== 'completed' && (
