@@ -13,6 +13,7 @@ import Card from '@/components/ui/Card';
 import { compressImage, getCurrentPosition, extractGPSFromImage } from '@/lib/image';
 import { DEFAULT_CENTER, DEFAULT_ZOOM } from '@/lib/constants';
 import { getStoredLocation, requestUserLocation } from '@/lib/location';
+import { createClient } from '@/lib/supabase/client';
 import type { ReportSeverity } from '@/types/database';
 
 interface SearchResult {
@@ -38,9 +39,18 @@ export default function ReportPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HeatMapHandle>(null);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      setIsLoggedIn(!!data.session);
+    });
+  }, []);
 
   // Close search results on outside click
   useEffect(() => {
@@ -395,9 +405,9 @@ export default function ReportPage() {
                 Your report helps build a clearer picture of litter hotspots in the area.
               </p>
               <div className="mt-6 space-y-3">
-                <a href="/volunteer" className="block">
+                <a href={isLoggedIn ? '/hotspots' : '/volunteer'} className="block">
                   <Button fullWidth variant="primary">
-                    Help clean up — volunteer
+                    {isLoggedIn ? 'Find hotspots near you' : 'Help clean up — volunteer'}
                   </Button>
                 </a>
                 <a href="/map" className="block">
