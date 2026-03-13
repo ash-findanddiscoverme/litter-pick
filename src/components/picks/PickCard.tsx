@@ -11,7 +11,7 @@ import type { PickWithDetails } from '@/types/database';
 /** Lightweight static map image — avoids creating a WebGL context per card */
 function StaticMap({ lat, lng }: { lat: number; lng: number }) {
   const key = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
-  const src = `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},14/400x256@2x.png?key=${key}&markers=${lng},${lat},#4AA853`;
+  const src = `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},14/400x256.png?key=${key}&markers=${lng},${lat},#4AA853`;
 
   return (
     <div className="rounded-xl overflow-hidden bg-stone-100" style={{ height: 128 }}>

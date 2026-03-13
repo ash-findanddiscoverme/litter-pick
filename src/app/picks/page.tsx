@@ -37,24 +37,27 @@ export default function PicksPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Try to get location from profile (if logged in)
+  // Get location from profile only if already logged in (getSession is local, no network call)
   useEffect(() => {
-    fetch('/api/auth/profile')
-      .then((r) => {
-        if (!r.ok) return null;
-        return r.json();
-      })
-      .then((data) => {
-        if (data?.user?.volunteer_lat && data?.user?.volunteer_lng) {
-          setUserLocation({
-            lat: data.user.volunteer_lat,
-            lng: data.user.volunteer_lng,
-            source: 'profile',
-          });
-          setSortMode('nearest');
-        }
-      })
-      .catch(() => {});
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const client = createClient();
+      client.auth.getSession().then(({ data }) => {
+        if (!data.session) return;
+        fetch('/api/auth/profile')
+          .then((r) => r.ok ? r.json() : null)
+          .then((profile) => {
+            if (profile?.user?.volunteer_lat && profile?.user?.volunteer_lng) {
+              setUserLocation({
+                lat: profile.user.volunteer_lat,
+                lng: profile.user.volunteer_lng,
+                source: 'profile',
+              });
+              setSortMode('nearest');
+            }
+          })
+          .catch(() => {});
+      });
+    });
   }, []);
 
   const requestBrowserLocation = useCallback(() => {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'litterpick-v1';
+const CACHE_NAME = 'litterpick-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -56,12 +56,19 @@ self.addEventListener('fetch', (event) => {
   // All other requests: network first with 3s timeout, fall back to cache
   event.respondWith(
     new Promise((resolve) => {
+      let settled = false;
       const timer = setTimeout(() => {
-        caches.match(request).then((cached) => resolve(cached || fetch(request)));
+        if (settled) return;
+        settled = true;
+        caches.match(request).then((cached) => {
+          resolve(cached || new Response('', { status: 504, statusText: 'Gateway Timeout' }));
+        });
       }, 3000);
 
       fetch(request)
         .then((response) => {
+          if (settled) return;
+          settled = true;
           clearTimeout(timer);
           if (response.ok) {
             const clone = response.clone();
@@ -70,6 +77,8 @@ self.addEventListener('fetch', (event) => {
           resolve(response);
         })
         .catch(() => {
+          if (settled) return;
+          settled = true;
           clearTimeout(timer);
           caches.match(request).then((cached) => resolve(cached || new Response('Offline', { status: 503 })));
         });
