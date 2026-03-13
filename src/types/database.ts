@@ -118,6 +118,7 @@ export interface PickWithDetails {
   hotspot_lat: number;
   hotspot_lng: number;
   hotspot_image: string | null;
+  has_council: boolean;
   organiser_id: string;
   organiser_name: string;
   organiser_avatar: string | null;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { getCouncilForCoordinates } from '@/lib/councils';
 
 export const runtime = 'edge';
 
@@ -57,6 +58,9 @@ export async function GET(request: NextRequest) {
     const enrichedPicks = picks.map((p) => {
       const org = organiserMap.get(p.organiser_user_id || '');
       const hs = hotspotMap.get(p.hotspot_id);
+      const hasCouncil = hs
+        ? !!getCouncilForCoordinates(hs.centroid_latitude, hs.centroid_longitude)
+        : false;
       return {
         id: p.id,
         hotspot_id: p.hotspot_id,
@@ -64,6 +68,7 @@ export async function GET(request: NextRequest) {
         hotspot_lat: hs?.centroid_latitude || 0,
         hotspot_lng: hs?.centroid_longitude || 0,
         hotspot_image: hs?.latest_before_image_url || hs?.latest_after_image_url || null,
+        has_council: hasCouncil,
         organiser_id: p.organiser_user_id || '',
         organiser_name: org?.first_name || 'Volunteer',
         organiser_avatar: org?.avatar_url || null,
