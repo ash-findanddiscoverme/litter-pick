@@ -1,4 +1,4 @@
-const CACHE_NAME = 'litterpick-v2';
+const CACHE_NAME = 'litterpick-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -24,18 +24,22 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for static
+// Fetch: only intercept resources that benefit from SW caching.
+// Let navigations, static assets (JS/CSS/fonts), and API calls go straight
+// to the network so they use HTTP/2 multiplexing from Cloudflare's CDN.
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
+  // Only handle GET requests from our own origin or map tile CDNs
   if (request.method !== 'GET') return;
+  if (url.origin === self.location.origin) {
+    // Don't intercept same-origin requests — let HTTP/2 handle them directly.
+    // This includes navigations, JS chunks, CSS, fonts, images, and API calls.
+    return;
+  }
 
-  // API requests: network only
-  if (url.pathname.startsWith('/api/')) return;
-
-  // Map tiles: cache with network fallback
+  // Map tiles: cache with network fallback (third-party CDN, benefits from caching)
   if (url.hostname.includes('maptiler') || url.hostname.includes('tiles')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) =>
@@ -52,36 +56,4 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-
-  // All other requests: network first with 3s timeout, fall back to cache
-  event.respondWith(
-    new Promise((resolve) => {
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        caches.match(request).then((cached) => {
-          resolve(cached || new Response('', { status: 504, statusText: 'Gateway Timeout' }));
-        });
-      }, 3000);
-
-      fetch(request)
-        .then((response) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          resolve(response);
-        })
-        .catch(() => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          caches.match(request).then((cached) => resolve(cached || new Response('Offline', { status: 503 })));
-        });
-    })
-  );
 });
