@@ -40,48 +40,70 @@ interface Organiser {
   avatar_url: string | null;
 }
 
-/** Inline map for pick detail - shows meet point pin if set, otherwise hotspot */
+/** Inline map for pick detail - shows both hotspot and meet point when set */
 function PickMap({ lat, lng, meetLat, meetLng }: { lat: number; lng: number; meetLat?: number | null; meetLng?: number | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const displayLat = meetLat ?? lat;
-  const displayLng = meetLng ?? lng;
+  const hasMeet = meetLat != null && meetLng != null;
 
   useEffect(() => {
     if (!containerRef.current) return;
     const key = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
+    const centerLat = hasMeet ? meetLat : lat;
+    const centerLng = hasMeet ? meetLng : lng;
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: MAP_STYLE_URL + key,
-      center: [displayLng, displayLat],
+      center: [centerLng, centerLat],
       zoom: 15,
       interactive: false,
       attributionControl: false,
     });
 
-    new maplibregl.Marker({ color: meetLat ? '#2563EB' : '#4AA853' })
-      .setLngLat([displayLng, displayLat])
+    // Hotspot marker (green, always shown)
+    new maplibregl.Marker({ color: '#4AA853' })
+      .setLngLat([lng, lat])
       .addTo(map);
 
+    // Meet point marker (blue, only if set)
+    if (hasMeet) {
+      const el = document.createElement('div');
+      el.innerHTML = '<svg width="28" height="36" viewBox="0 0 28 36"><path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.268 21.732 0 14 0z" fill="#2563EB"/><circle cx="14" cy="14" r="6" fill="white"/></svg>';
+      new maplibregl.Marker({ element: el })
+        .setLngLat([meetLng, meetLat])
+        .addTo(map);
+
+      // Fit bounds to show both markers
+      const bounds = new maplibregl.LngLatBounds();
+      bounds.extend([lng, lat]);
+      bounds.extend([meetLng, meetLat]);
+      map.fitBounds(bounds, { padding: 40, maxZoom: 16 });
+    }
+
     return () => { map.remove(); };
-  }, [displayLat, displayLng, meetLat]);
+  }, [lat, lng, meetLat, meetLng, hasMeet]);
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-stone-100" style={{ height: 180 }}>
+    <div className="rounded-2xl overflow-hidden bg-stone-100" style={{ height: 200 }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
     </div>
   );
 }
 
 /** Interactive map for organiser to pick a meet location */
-function MeetLocationPicker({ initialLat, initialLng, onSelect, onCancel }: {
-  initialLat: number;
-  initialLng: number;
+function MeetLocationPicker({ hotspotLat, hotspotLng, initialMeetLat, initialMeetLng, onSelect, onCancel }: {
+  hotspotLat: number;
+  hotspotLng: number;
+  initialMeetLat?: number | null;
+  initialMeetLng?: number | null;
   onSelect: (lat: number, lng: number) => void;
   onCancel: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
-  const selectedRef = useRef({ lat: initialLat, lng: initialLng });
+  const selectedRef = useRef<{ lat: number; lng: number } | null>(
+    initialMeetLat && initialMeetLng ? { lat: initialMeetLat, lng: initialMeetLng } : null
+  );
+  const [hasPlaced, setHasPlaced] = useState(!!initialMeetLat);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -89,43 +111,86 @@ function MeetLocationPicker({ initialLat, initialLng, onSelect, onCancel }: {
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: MAP_STYLE_URL + key,
-      center: [initialLng, initialLat],
+      center: [hotspotLng, hotspotLat],
       zoom: 15,
       attributionControl: false,
     });
 
-    const marker = new maplibregl.Marker({ color: '#2563EB', draggable: true })
-      .setLngLat([initialLng, initialLat])
+    // Fixed green marker for hotspot
+    new maplibregl.Marker({ color: '#4AA853' })
+      .setLngLat([hotspotLng, hotspotLat])
       .addTo(map);
-    markerRef.current = marker;
 
-    marker.on('dragend', () => {
-      const lngLat = marker.getLngLat();
-      selectedRef.current = { lat: lngLat.lat, lng: lngLat.lng };
-    });
+    // If editing an existing meet point, show it
+    if (initialMeetLat && initialMeetLng) {
+      const marker = new maplibregl.Marker({ color: '#2563EB', draggable: true })
+        .setLngLat([initialMeetLng, initialMeetLat])
+        .addTo(map);
+      markerRef.current = marker;
+
+      marker.on('dragend', () => {
+        const lngLat = marker.getLngLat();
+        selectedRef.current = { lat: lngLat.lat, lng: lngLat.lng };
+      });
+    }
 
     map.on('click', (e) => {
-      marker.setLngLat([e.lngLat.lng, e.lngLat.lat]);
-      selectedRef.current = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+      const clickLat = e.lngLat.lat;
+      const clickLng = e.lngLat.lng;
+
+      if (markerRef.current) {
+        markerRef.current.setLngLat([clickLng, clickLat]);
+      } else {
+        const marker = new maplibregl.Marker({ color: '#2563EB', draggable: true })
+          .setLngLat([clickLng, clickLat])
+          .addTo(map);
+        markerRef.current = marker;
+
+        marker.on('dragend', () => {
+          const lngLat = marker.getLngLat();
+          selectedRef.current = { lat: lngLat.lat, lng: lngLat.lng };
+        });
+      }
+
+      selectedRef.current = { lat: clickLat, lng: clickLng };
+      setHasPlaced(true);
     });
 
     return () => { map.remove(); };
-  }, [initialLat, initialLng]);
+  }, [hotspotLat, hotspotLng, initialMeetLat, initialMeetLng]);
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl overflow-hidden bg-stone-100" style={{ height: 250 }}>
+      <div className="rounded-2xl overflow-hidden bg-stone-100 ring-2 ring-blue-300" style={{ height: 280 }}>
         <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       </div>
-      <p className="text-xs text-stone-400 text-center">Tap the map or drag the pin to set the meet point</p>
+
+      {!hasPlaced && (
+        <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
+          <svg className="w-4 h-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+          </svg>
+          <p className="text-xs text-blue-700">Tap the map to drop a pin where volunteers should meet</p>
+        </div>
+      )}
+      {hasPlaced && (
+        <p className="text-xs text-stone-400 text-center">Drag the blue pin or tap to reposition</p>
+      )}
+
       <div className="flex gap-2">
         <Button variant="ghost" onClick={onCancel} size="sm">Cancel</Button>
         <Button
           fullWidth
           size="sm"
-          onClick={() => onSelect(selectedRef.current.lat, selectedRef.current.lng)}
+          disabled={!hasPlaced}
+          onClick={() => {
+            if (selectedRef.current) {
+              onSelect(selectedRef.current.lat, selectedRef.current.lng);
+            }
+          }}
         >
-          Confirm meet point
+          {hasPlaced ? 'Confirm meet point' : 'Place a pin first'}
         </Button>
       </div>
     </div>
@@ -667,8 +732,10 @@ export default function CleanupPage() {
               {/* Meet location picker - organiser only */}
               {hotspot && showMeetPicker && (
                 <MeetLocationPicker
-                  initialLat={meetLat ?? hotspot.centroid_latitude}
-                  initialLng={meetLng ?? hotspot.centroid_longitude}
+                  hotspotLat={hotspot.centroid_latitude}
+                  hotspotLng={hotspot.centroid_longitude}
+                  initialMeetLat={meetLat}
+                  initialMeetLng={meetLng}
                   onSelect={(lat, lng) => handleSaveMeetLocation(lat, lng)}
                   onCancel={() => setShowMeetPicker(false)}
                 />
