@@ -47,7 +47,9 @@ export async function POST(
 
     // Upload any after photos
     const photoUrls: string[] = [];
-    for (const [key, value] of formData.entries()) {
+    const entries = Array.from(formData.entries());
+    for (let i = 0; i < entries.length; i++) {
+      const [key, value] = entries[i];
       if (key.startsWith('after_photo_') && value instanceof File) {
         const file = value;
         const ext = file.name.split('.').pop() || 'jpg';
