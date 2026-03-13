@@ -159,16 +159,6 @@ export default function ProfilePage() {
     setError(null);
 
     try {
-      // Check image safety before uploading
-      const { checkImageSafety } = await import('@/lib/moderation');
-      const modResult = await checkImageSafety(file);
-      if (!modResult.safe) {
-        setError(modResult.reason || 'This image was flagged as inappropriate.');
-        setUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
-      }
-
       // Convert to WebP client-side (cropped to square, max 400px)
       const webpBlob = await convertToWebP(file);
 
