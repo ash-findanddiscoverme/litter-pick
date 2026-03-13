@@ -1,4 +1,4 @@
-// Oxfordshire centre coordinates
+// UK centre coordinates (used as fallback when user location unavailable)
 export const DEFAULT_CENTER: [number, number] = [-1.2577, 51.7520]; // [lng, lat]
 export const DEFAULT_ZOOM = 9;
 

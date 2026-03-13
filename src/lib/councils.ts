@@ -1,4 +1,4 @@
-// Oxfordshire district/city council data for litter pick coordination
+// Council data for litter pick coordination (currently Oxfordshire, expanding UK-wide)
 // Each council has a bounding box for approximate boundary detection
 
 export interface CouncilInfo {

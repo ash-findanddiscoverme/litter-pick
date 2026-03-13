@@ -15,7 +15,7 @@ export default function LandingPage() {
               src="/hero.webp"
               srcSet="/hero-480w.webp 480w, /hero-768w.webp 768w, /hero-1024w.webp 1024w, /hero.webp 1920w"
               sizes="100vw"
-              alt="Oxfordshire countryside at golden hour"
+              alt="British countryside at golden hour"
               width={1920}
               height={1279}
               fetchPriority="high"
@@ -26,7 +26,7 @@ export default function LandingPage() {
             <div className="absolute inset-0 flex flex-col justify-end max-w-6xl mx-auto px-4 pb-8 md:pb-12">
               <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white rounded-full px-4 py-1.5 text-sm font-medium mb-4 w-fit">
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                Now in Oxfordshire
+                Across the UK
               </div>
               <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.1] drop-shadow-lg">
                 Care for your{' '}
@@ -137,7 +137,7 @@ export default function LandingPage() {
               See where help is needed
             </h2>
             <p className="text-weathered mt-3 max-w-md mx-auto">
-              The heatmap shows litter density across Oxfordshire. Brighter spots mean more reports.
+              The heatmap shows litter density in your area. Brighter spots mean more reports.
             </p>
             <div className="mt-8">
               <a href="/map">

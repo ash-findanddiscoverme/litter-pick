@@ -21,7 +21,7 @@ export default function TermsPage() {
         Litter Pick is a community platform for reporting litter, identifying local
         hotspots, and coordinating volunteer picks. It is designed for individuals,
         community groups, and local organisations who want to help keep their
-        neighbourhoods clean. The Service is currently focused on Oxfordshire, England,
+        neighbourhoods clean. The Service is available across the United Kingdom,
         though we may expand in the future.
       </p>
 

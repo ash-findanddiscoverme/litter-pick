@@ -4,7 +4,7 @@ import Footer from '@/components/layout/Footer';
 
 export const metadata = {
   title: 'Why is there so much litter on our roads — Litter Pick',
-  description: 'Where roadside litter comes from, why it builds up, and what communities across Oxfordshire are doing about it.',
+  description: 'Where roadside litter comes from, why it builds up, and what communities across the UK are doing about it.',
 };
 
 export default function RoadsGuide() {
@@ -22,7 +22,7 @@ export default function RoadsGuide() {
 
           <h1 className="text-3xl font-bold text-loam">Why is there so much litter on our roads</h1>
           <p className="text-weathered mt-3 leading-relaxed">
-            Drive any A-road in Oxfordshire and you will see it — drink cans in the verge,
+            Drive any A-road in the UK and you will see it — drink cans in the verge,
             plastic bags caught in hedgerows, fast-food packaging scattered along laybys.
             It is one of the most visible forms of litter, and one of the hardest to tackle.
           </p>
@@ -76,7 +76,7 @@ export default function RoadsGuide() {
               <h2 className="text-xl font-semibold text-loam mb-3">What communities are doing</h2>
               <p>
                 Volunteer litter picks have grown rapidly. Groups adopt stretches of road and
-                clean them regularly — often monthly. In Oxfordshire, parish councils and
+                clean them regularly — often monthly. Across the UK, parish councils and
                 community groups coordinate picks along popular routes and publish the results
                 to keep momentum going.
               </p>

@@ -80,7 +80,7 @@ export default function DonationForm() {
     activeAmount && IMPACT_MESSAGES[activeAmount]
       ? IMPACT_MESSAGES[activeAmount]
       : activeAmount && activeAmount >= 2
-        ? 'Every donation helps keep Oxfordshire clean.'
+        ? 'Every donation helps keep our communities clean.'
         : null;
 
   return (

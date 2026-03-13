@@ -52,7 +52,7 @@ export function welcomeEmail(firstName: string) {
   const html = layout(`
     <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:${LOAM};">Welcome aboard, ${firstName}!</h1>
     <p style="margin:0 0 20px;font-size:15px;color:${WEATHERED};line-height:1.6;">
-      Thanks for signing up to Litter Pick. You're now part of a growing community helping to keep Oxfordshire clean.
+      Thanks for signing up to Litter Pick. You're now part of a growing community helping to keep the UK clean.
     </p>
 
     <p style="margin:0 0 8px;font-size:15px;font-weight:600;color:${LOAM};">Here's how to get started:</p>
@@ -101,7 +101,7 @@ export function welcomeEmail(firstName: string) {
 
   const text = `Welcome aboard, ${firstName}!
 
-Thanks for signing up to Litter Pick. You're now part of a growing community helping to keep Oxfordshire clean.
+Thanks for signing up to Litter Pick. You're now part of a growing community helping to keep the UK clean.
 
 Here's how to get started:
 

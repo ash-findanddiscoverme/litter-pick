@@ -116,7 +116,7 @@ export default function MapPage() {
       <main className="flex-1 pt-16 flex flex-col" style={{ height: '100vh' }}>
         {/* Page heading */}
         <div className="px-4 py-3 bg-stone-50 border-b border-stone-100">
-          <h1 className="text-2xl font-bold text-loam">Litter Map - Heat map of reported litter in Oxfordshire</h1>
+          <h1 className="text-2xl font-bold text-loam">Litter Map - Heat map of reported litter across the UK</h1>
         </div>
 
         {/* Early-adopter banner */}
@@ -124,7 +124,7 @@ export default function MapPage() {
           <div className="bg-brand-500 text-white px-4 py-3 flex items-center gap-3">
             <p className="flex-1 text-sm leading-snug">
               <span className="font-semibold">Litter Pick is brand new.</span>{' '}
-              We need our first volunteers to start logging rubbish across Oxfordshire.
+              We need volunteers to start logging rubbish in their local area.
               Spot something? Tap <span className="font-semibold">Report litter</span> and help build the picture.
             </p>
             <button

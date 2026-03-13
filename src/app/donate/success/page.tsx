@@ -24,7 +24,7 @@ export default function DonationSuccessPage() {
             </h1>
             <p className="text-lg text-weathered mt-4 leading-relaxed">
               Your donation makes a real difference. It goes directly towards
-              keeping Oxfordshire cleaner and supporting local volunteers.
+              keeping communities cleaner and supporting local volunteers.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
               <Link href="/">
