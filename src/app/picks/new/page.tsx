@@ -166,6 +166,19 @@ function NewPickContent() {
               />
             </Card>
 
+            {/* Busy road warning */}
+            {hotspotId && hotspots.some((hs) => hs.id === hotspotId && /\b[AM]\d{1,4}\b/i.test(hs.area_name || '')) && (
+              <div className="flex gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Near a busy road</p>
+                  <p className="text-xs text-red-700 mt-0.5">This hotspot is near an A or M road. Please ensure this is a safe location for volunteers before organising a pick.</p>
+                </div>
+              </div>
+            )}
+
             {/* Date/time */}
             <Card>
               <label className="block text-sm font-medium text-loam mb-1.5">
