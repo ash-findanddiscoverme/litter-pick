@@ -135,23 +135,26 @@ export default function AdminFeedbackPage() {
             {filteredFeedback.map((item) => {
               const statusConfig = STATUS_CONFIG[item.status];
               return (
-                <Card
+                <div
                   key={item.id}
-                  className={`cursor-pointer transition-shadow hover:shadow-md ${
-                    selectedFeedback?.id === item.id ? 'ring-2 ring-brand-500' : ''
-                  }`}
                   onClick={() => setSelectedFeedback(item)}
+                  className="cursor-pointer"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-loam line-clamp-2">{item.message}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-weathered">
-                        <span>{formatDate(item.created_at)}</span>
-                        {item.page_url && (
-                          <>
-                            <span className="text-stone-300">|</span>
-                            <span className="truncate max-w-[150px]">{item.page_url}</span>
-                          </>
+                  <Card
+                    className={`transition-shadow hover:shadow-md ${
+                      selectedFeedback?.id === item.id ? 'ring-2 ring-brand-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-loam line-clamp-2">{item.message}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-weathered">
+                          <span>{formatDate(item.created_at)}</span>
+                          {item.page_url && (
+                            <>
+                              <span className="text-stone-300">|</span>
+                              <span className="truncate max-w-[150px]">{item.page_url}</span>
+                            </>
                         )}
                       </div>
                     </div>
@@ -159,7 +162,8 @@ export default function AdminFeedbackPage() {
                       {statusConfig.label}
                     </span>
                   </div>
-                </Card>
+                  </Card>
+                </div>
               );
             })}
           </div>
