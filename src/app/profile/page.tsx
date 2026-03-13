@@ -23,6 +23,18 @@ interface ReportPhoto {
   hotspot_id: string | null;
 }
 
+interface UserPick {
+  id: string;
+  hotspot_id: string;
+  hotspot_name: string | null;
+  hotspot_county: string | null;
+  status: string;
+  proposed_time: string | null;
+  volunteer_count: number;
+  bags_collected: number | null;
+  role: 'organiser' | 'volunteer';
+}
+
 interface ProfileData {
   user: User;
   stats: {
@@ -31,6 +43,7 @@ interface ProfileData {
     areas_helped: number;
   };
   reports: ReportPhoto[];
+  picks: UserPick[];
 }
 
 /** Calculate bounding box for a circle so fitBounds keeps the edge in view. */
@@ -379,6 +392,76 @@ export default function ProfilePage() {
               }}
             />
           </Card>
+
+          {/* My Picks */}
+          {profile.picks && profile.picks.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-loam">My picks</h3>
+                <span className="text-xs text-stone-400">{profile.picks.length} pick{profile.picks.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="space-y-2">
+                {profile.picks.map((pick) => {
+                  const isPast = pick.proposed_time ? new Date(pick.proposed_time) < new Date() : false;
+                  const statusConfig: Record<string, { label: string; color: string }> = {
+                    scheduled: { label: 'Scheduled', color: 'bg-blue-50 text-blue-700' },
+                    forming: { label: 'Forming', color: 'bg-amber-50 text-amber-700' },
+                    in_progress: { label: 'In progress', color: 'bg-brand-50 text-brand-600' },
+                    completed: { label: 'Completed', color: 'bg-green-50 text-green-700' },
+                    cancelled: { label: 'Cancelled', color: 'bg-stone-100 text-stone-500' },
+                  };
+                  const sc = statusConfig[pick.status] || { label: pick.status, color: 'bg-stone-100 text-stone-500' };
+
+                  return (
+                    <Link key={pick.id} href={`/pick/${pick.id}`}>
+                      <Card className="hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${sc.color}`}>
+                                {sc.label}
+                              </span>
+                              <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                                pick.role === 'organiser' ? 'bg-brand-50 text-brand-600' : 'bg-stone-100 text-stone-500'
+                              }`}>
+                                {pick.role === 'organiser' ? 'Organiser' : 'Joined'}
+                              </span>
+                            </div>
+                            <p className="text-sm font-medium text-loam truncate">
+                              {pick.hotspot_name || 'Litter pick'}
+                            </p>
+                            {pick.hotspot_county && (
+                              <p className="text-xs text-stone-400">{pick.hotspot_county}</p>
+                            )}
+                            <div className="flex items-center gap-3 mt-1 text-xs text-weathered">
+                              {pick.proposed_time && (
+                                <span>
+                                  {new Date(pick.proposed_time).toLocaleDateString('en-GB', {
+                                    weekday: 'short',
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              )}
+                              <span>{pick.volunteer_count} volunteer{pick.volunteer_count !== 1 ? 's' : ''}</span>
+                              {pick.status === 'completed' && pick.bags_collected != null && (
+                                <span>{pick.bags_collected} bags</span>
+                              )}
+                            </div>
+                          </div>
+                          <svg className="w-4 h-4 text-stone-300 shrink-0 mt-2" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                          </svg>
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Report photos */}
           {profile.reports && profile.reports.length > 0 && (

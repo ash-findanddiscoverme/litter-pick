@@ -68,8 +68,8 @@ export async function GET() {
       });
     }
 
-    // Run independent queries in parallel instead of sequentially
-    const [interestsResult, reportsResult] = await Promise.all([
+    // Run independent queries in parallel
+    const [interestsResult, reportsResult, organisedResult, joinedResult] = await Promise.all([
       serviceClient
         .from('volunteer_interests')
         .select('hotspot_id')
@@ -81,12 +81,89 @@ export async function GET() {
         .not('image_url', 'is', null)
         .order('submitted_at', { ascending: false })
         .limit(20),
+      serviceClient
+        .from('cleanups')
+        .select('id, hotspot_id, status, proposed_time, volunteer_count, bags_collected')
+        .eq('organiser_user_id', user.id)
+        .order('proposed_time', { ascending: false })
+        .limit(20),
+      serviceClient
+        .from('volunteer_interests')
+        .select('hotspot_id')
+        .eq('user_id', user.id),
     ]);
 
     const interests = interestsResult.data || [];
     const userReports = reportsResult.data || [];
+    const organisedPicks = organisedResult.data || [];
 
-    // Use interests data for both count and hotspot ID lookup (avoids duplicate query)
+    // Find picks the user joined (via volunteer_interests on hotspots that have cleanups)
+    const joinedHotspotIds = (joinedResult.data || []).map((i: { hotspot_id: string }) => i.hotspot_id);
+    let joinedPicks: Array<{ id: string; hotspot_id: string; status: string; proposed_time: string | null; volunteer_count: number; bags_collected: number | null }> = [];
+    if (joinedHotspotIds.length > 0) {
+      const { data } = await serviceClient
+        .from('cleanups')
+        .select('id, hotspot_id, status, proposed_time, volunteer_count, bags_collected')
+        .in('hotspot_id', joinedHotspotIds)
+        .neq('organiser_user_id', user.id)
+        .order('proposed_time', { ascending: false })
+        .limit(20);
+      joinedPicks = data || [];
+    }
+
+    // Merge and deduplicate picks, tag with role
+    const allPickIds = new Set<string>();
+    const userPicks: Array<Record<string, unknown>> = [];
+
+    for (let i = 0; i < organisedPicks.length; i++) {
+      const p = organisedPicks[i];
+      allPickIds.add(p.id);
+      userPicks.push({ ...p, role: 'organiser' });
+    }
+    for (let i = 0; i < joinedPicks.length; i++) {
+      const p = joinedPicks[i];
+      if (!allPickIds.has(p.id)) {
+        allPickIds.add(p.id);
+        userPicks.push({ ...p, role: 'volunteer' });
+      }
+    }
+
+    // Fetch hotspot names for all picks
+    const pickHotspotIds = Array.from(new Set(userPicks.map((p) => p.hotspot_id as string)));
+    let hotspotNameMap = new Map<string, { area_name: string | null; county: string | null }>();
+    if (pickHotspotIds.length > 0) {
+      const { data: hsData } = await serviceClient
+        .from('hotspots')
+        .select('id, area_name, county')
+        .in('id', pickHotspotIds);
+      if (hsData) {
+        hotspotNameMap = new Map(hsData.map((h: { id: string; area_name: string | null; county: string | null }) => [h.id, { area_name: h.area_name, county: h.county }]));
+      }
+    }
+
+    const enrichedPicks = userPicks.map((p) => {
+      const hs = hotspotNameMap.get(p.hotspot_id as string);
+      return {
+        ...p,
+        hotspot_name: hs?.area_name || null,
+        hotspot_county: hs?.county || null,
+      };
+    });
+
+    // Sort: upcoming first (ascending), then past (descending)
+    enrichedPicks.sort((a, b) => {
+      const aTime = a.proposed_time ? new Date(a.proposed_time as string).getTime() : 0;
+      const bTime = b.proposed_time ? new Date(b.proposed_time as string).getTime() : 0;
+      const now = Date.now();
+      const aFuture = aTime >= now;
+      const bFuture = bTime >= now;
+      if (aFuture && !bFuture) return -1;
+      if (!aFuture && bFuture) return 1;
+      if (aFuture && bFuture) return aTime - bTime;
+      return bTime - aTime;
+    });
+
+    // Use interests data for both count and hotspot ID lookup
     const hotspotIds = interests.map((i: { hotspot_id: string }) => i.hotspot_id);
 
     let completedCleanups: { hotspot_id: string }[] = [];
@@ -109,6 +186,7 @@ export async function GET() {
         areas_helped: uniqueAreas.size,
       },
       reports: userReports,
+      picks: enrichedPicks,
     });
   } catch (err) {
     console.error('Profile error:', err);
