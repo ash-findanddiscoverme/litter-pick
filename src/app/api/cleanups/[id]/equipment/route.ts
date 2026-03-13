@@ -5,10 +5,10 @@ export const runtime = 'edge';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const supabase = createServerSupabaseClient();
     const serviceClient = createServiceRoleClient();
 
@@ -38,7 +38,8 @@ export async function PATCH(
     ];
 
     const updates: Record<string, unknown> = {};
-    for (const field of allowedFields) {
+    for (let i = 0; i < allowedFields.length; i++) {
+      const field = allowedFields[i];
       if (body[field] !== undefined) {
         updates[field] = body[field];
       }
