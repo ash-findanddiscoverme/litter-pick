@@ -112,8 +112,20 @@ export async function GET() {
     }
 
     // Merge and deduplicate picks, tag with role
+    interface PickRow {
+      id: string;
+      hotspot_id: string;
+      status: string;
+      proposed_time: string | null;
+      volunteer_count: number;
+      bags_collected: number | null;
+      role: string;
+      hotspot_name?: string | null;
+      hotspot_county?: string | null;
+    }
+
     const allPickIds = new Set<string>();
-    const userPicks: Array<Record<string, unknown>> = [];
+    const userPicks: PickRow[] = [];
 
     for (let i = 0; i < organisedPicks.length; i++) {
       const p = organisedPicks[i];
@@ -129,7 +141,7 @@ export async function GET() {
     }
 
     // Fetch hotspot names for all picks
-    const pickHotspotIds = Array.from(new Set(userPicks.map((p) => p.hotspot_id as string)));
+    const pickHotspotIds = Array.from(new Set(userPicks.map((p) => p.hotspot_id)));
     let hotspotNameMap = new Map<string, { area_name: string | null; county: string | null }>();
     if (pickHotspotIds.length > 0) {
       const { data: hsData } = await serviceClient
@@ -142,7 +154,7 @@ export async function GET() {
     }
 
     const enrichedPicks = userPicks.map((p) => {
-      const hs = hotspotNameMap.get(p.hotspot_id as string);
+      const hs = hotspotNameMap.get(p.hotspot_id);
       return {
         ...p,
         hotspot_name: hs?.area_name || null,
@@ -152,8 +164,8 @@ export async function GET() {
 
     // Sort: upcoming first (ascending), then past (descending)
     enrichedPicks.sort((a, b) => {
-      const aTime = a.proposed_time ? new Date(a.proposed_time as string).getTime() : 0;
-      const bTime = b.proposed_time ? new Date(b.proposed_time as string).getTime() : 0;
+      const aTime = a.proposed_time ? new Date(a.proposed_time).getTime() : 0;
+      const bTime = b.proposed_time ? new Date(b.proposed_time).getTime() : 0;
       const now = Date.now();
       const aFuture = aTime >= now;
       const bFuture = bTime >= now;
