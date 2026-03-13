@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/admin';
 
 export const runtime = 'edge';
 
@@ -9,20 +10,7 @@ export async function GET() {
     const serviceClient = createServiceRoleClient();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const { data: adminUser } = await serviceClient
-      .from('users')
-      .select('id')
-      .eq('id', user.id)
-      .eq('status', 'active')
-      .single();
-
-    const { data: isAdmin } = await serviceClient.rpc('is_admin', { user_id: user.id });
-
-    if (!adminUser || !isAdmin) {
+    if (!user || !isAdminEmail(user.email)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -50,12 +38,7 @@ export async function PATCH(request: NextRequest) {
     const serviceClient = createServiceRoleClient();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const { data: isAdmin } = await serviceClient.rpc('is_admin', { user_id: user.id });
-    if (!isAdmin) {
+    if (!user || !isAdminEmail(user.email)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
