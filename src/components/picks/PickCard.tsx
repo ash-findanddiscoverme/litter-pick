@@ -8,14 +8,51 @@ import { formatPickDate } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import type { PickWithDetails } from '@/types/database';
 
-/** Lightweight static map image — avoids creating a WebGL context per card */
-function StaticMap({ lat, lng }: { lat: number; lng: number }) {
+function getStaticMapUrl(lat: number, lng: number): string {
   const key = process.env.NEXT_PUBLIC_MAPTILER_KEY || '';
-  const src = `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},14/400x256.png?key=${key}&markers=${lng},${lat},#4AA853`;
+  return `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},14/400x200@2x.png?key=${key}`;
+}
+
+interface PickImageProps {
+  lat: number;
+  lng: number;
+  hotspotImage: string | null;
+}
+
+function PickImage({ lat, lng, hotspotImage }: PickImageProps) {
+  const [imageError, setImageError] = useState(false);
+  const staticMapUrl = getStaticMapUrl(lat, lng);
+
+  if (hotspotImage && !imageError) {
+    return (
+      <div className="relative rounded-xl overflow-hidden bg-stone-100" style={{ height: 140 }}>
+        <img
+          src={hotspotImage}
+          alt="Hotspot"
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={() => setImageError(true)}
+        />
+        <div className="absolute bottom-2 right-2 w-16 h-12 rounded-lg overflow-hidden border-2 border-white shadow-md">
+          <img
+            src={staticMapUrl}
+            alt="Map"
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-xl overflow-hidden bg-stone-100" style={{ height: 128 }}>
-      <img src={src} alt="Map" className="w-full h-full object-cover" loading="lazy" />
+    <div className="rounded-xl overflow-hidden bg-stone-100" style={{ height: 140 }}>
+      <img
+        src={staticMapUrl}
+        alt="Map"
+        className="w-full h-full object-cover"
+        loading="lazy"
+      />
     </div>
   );
 }
@@ -134,10 +171,14 @@ export default function PickCard({ pick, distanceKm }: PickCardProps) {
           <p className="text-sm text-weathered">{pick.notes}</p>
         )}
 
-        {/* Static map + directions */}
+        {/* Image/map + directions */}
         {pick.hotspot_lat && pick.hotspot_lng && (
           <div className="space-y-2">
-            <StaticMap lat={pick.hotspot_lat} lng={pick.hotspot_lng} />
+            <PickImage
+              lat={pick.hotspot_lat}
+              lng={pick.hotspot_lng}
+              hotspotImage={pick.hotspot_image}
+            />
 
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${pick.hotspot_lat},${pick.hotspot_lng}`}

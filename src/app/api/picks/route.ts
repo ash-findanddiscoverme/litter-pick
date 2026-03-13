@@ -45,10 +45,10 @@ export async function GET(request: NextRequest) {
       .select('id, first_name, avatar_url')
       .in('id', organiserIds);
 
-    // Fetch hotspots
+    // Fetch hotspots (including images)
     const { data: hotspots } = await serviceClient
       .from('hotspots')
-      .select('id, area_name, centroid_latitude, centroid_longitude')
+      .select('id, area_name, centroid_latitude, centroid_longitude, latest_before_image_url, latest_after_image_url')
       .in('id', hotspotIds);
 
     const organiserMap = new Map((organisers || []).map((o) => [o.id, o]));
@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
         hotspot_name: hs?.area_name || null,
         hotspot_lat: hs?.centroid_latitude || 0,
         hotspot_lng: hs?.centroid_longitude || 0,
+        hotspot_image: hs?.latest_before_image_url || hs?.latest_after_image_url || null,
         organiser_id: p.organiser_user_id || '',
         organiser_name: org?.first_name || 'Volunteer',
         organiser_avatar: org?.avatar_url || null,
