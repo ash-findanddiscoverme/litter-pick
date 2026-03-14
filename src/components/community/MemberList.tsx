@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import type { CommunityMemberWithUser, CommunityMemberRole } from '@/types/database';
@@ -110,9 +111,9 @@ export default function MemberList({
 
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-loam truncate">
+                  <Link href={`/user/${member.user_id}`} className="font-medium text-loam truncate hover:text-brand-600 transition-colors">
                     {member.user.first_name}
-                  </span>
+                  </Link>
                   {isSelf && (
                     <span className="text-xs text-weathered">(you)</span>
                   )}

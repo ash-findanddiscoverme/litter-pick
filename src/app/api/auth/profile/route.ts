@@ -190,6 +190,27 @@ export async function GET() {
 
     const uniqueAreas = new Set(completedCleanups.map((c) => c.hotspot_id));
 
+    // Fetch user's communities
+    const { data: memberships } = await serviceClient
+      .from('community_members')
+      .select('community_id, role')
+      .eq('user_id', user.id);
+
+    let communities: Array<{ id: string; name: string; photo_url: string | null; area_name: string | null; role: string }> = [];
+    if (memberships && memberships.length > 0) {
+      const communityIds = memberships.map((m: { community_id: string }) => m.community_id);
+      const { data: comms } = await serviceClient
+        .from('communities')
+        .select('id, name, photo_url, area_name')
+        .in('id', communityIds);
+
+      const roleMap = new Map(memberships.map((m: { community_id: string; role: string }) => [m.community_id, m.role]));
+      communities = (comms || []).map((c: { id: string; name: string; photo_url: string | null; area_name: string | null }) => ({
+        ...c,
+        role: roleMap.get(c.id) || 'member',
+      }));
+    }
+
     return NextResponse.json({
       user: profile,
       stats: {
@@ -199,6 +220,7 @@ export async function GET() {
       },
       reports: userReports,
       picks: enrichedPicks,
+      communities,
     });
   } catch (err) {
     console.error('Profile error:', err);

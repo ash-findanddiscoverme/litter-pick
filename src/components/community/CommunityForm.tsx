@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
+import HeatMap from '@/components/map/HeatMap';
+import type { HeatMapHandle } from '@/components/map/HeatMap';
 import type { Community } from '@/types/database';
 
 interface CommunityFormProps {
@@ -14,22 +16,50 @@ interface CommunityFormProps {
 
 const RADIUS_OPTIONS = [1, 2, 3, 5, 10, 15, 20, 30, 50];
 
+interface SearchResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+function circleBounds(
+  lng: number,
+  lat: number,
+  radiusKm: number
+): { sw: [number, number]; ne: [number, number] } {
+  const earthRadius = 6371;
+  const latDelta = (radiusKm / earthRadius) * (180 / Math.PI);
+  const lngDelta = (radiusKm / (earthRadius * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI);
+  return {
+    sw: [lng - lngDelta, lat - latDelta],
+    ne: [lng + lngDelta, lat + latDelta],
+  };
+}
+
 export default function CommunityForm({ community, mode }: CommunityFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mapRef = useRef<HeatMapHandle>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const [name, setName] = useState(community?.name || '');
   const [description, setDescription] = useState(community?.description || '');
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(community?.photo_url || null);
   const [radiusKm, setRadiusKm] = useState(community?.radius_km || 5);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    community ? { lat: community.center_lat, lng: community.center_lng } : null
+  const [center, setCenter] = useState<[number, number] | null>(
+    community ? [community.center_lng, community.center_lat] : null
   );
   const [locationName, setLocationName] = useState(community?.area_name || '');
-  const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (photo) {
@@ -39,39 +69,104 @@ export default function CommunityForm({ community, mode }: CommunityFormProps) {
     }
   }, [photo]);
 
-  const handleGetLocation = () => {
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fit map to circle bounds when radius or center changes
+  useEffect(() => {
+    if (!center) return;
+    const fit = () => {
+      if (mapRef.current) {
+        const { sw, ne } = circleBounds(center[0], center[1], radiusKm);
+        mapRef.current.fitBounds(sw, ne, 40);
+        return true;
+      }
+      return false;
+    };
+    if (!fit()) {
+      const timer = setInterval(() => {
+        if (fit()) clearInterval(timer);
+      }, 100);
+      return () => clearInterval(timer);
+    }
+  }, [radiusKm, center]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    if (query.length < 3) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb&limit=5&addressdetails=1`,
+          { headers: { Accept: 'application/json' } }
+        );
+        const data: SearchResult[] = await res.json();
+        setSearchResults(data);
+        setShowResults(data.length > 0);
+      } catch {
+        setSearchResults([]);
+      }
+      setSearching(false);
+    }, 400);
+  };
+
+  const handleSelectSearchResult = (result: SearchResult) => {
+    const lng = parseFloat(result.lon);
+    const lat = parseFloat(result.lat);
+    setCenter([lng, lat]);
+    const placeName = result.display_name.split(',')[0];
+    setLocationName(placeName);
+    setSearchQuery(placeName);
+    setShowResults(false);
+    setSearchResults([]);
+  };
+
+  const handleMapLocationSelect = (lng: number, lat: number) => {
+    setCenter([lng, lat]);
+    // Reverse geocode
+    fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=12`,
+      { headers: { 'User-Agent': 'LitterPick/1.0' } }
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const addr = data.address;
+        const place = addr?.town || addr?.city || addr?.village || addr?.suburb || addr?.county || '';
+        if (place) setLocationName(place);
+      })
+      .catch(() => {});
+  };
+
+  const handleGetBrowserLocation = () => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
       return;
     }
-
-    setLocating(true);
     setError('');
-
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        setLocation({ lat, lng });
-
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=12`,
-            { headers: { 'User-Agent': 'LitterPick/1.0' } }
-          );
-          const data = await res.json();
-          const addr = data.address;
-          const place = addr?.town || addr?.city || addr?.village || addr?.suburb || addr?.county || '';
-          setLocationName(place);
-        } catch {
-          setLocationName('Location set');
-        }
-
-        setLocating(false);
+        handleMapLocationSelect(lng, lat);
       },
       (err) => {
         setError(`Failed to get location: ${err.message}`);
-        setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -101,7 +196,7 @@ export default function CommunityForm({ community, mode }: CommunityFormProps) {
       return;
     }
 
-    if (!location) {
+    if (!center) {
       setError('Please set the community location');
       return;
     }
@@ -114,8 +209,8 @@ export default function CommunityForm({ community, mode }: CommunityFormProps) {
       if (description.trim()) {
         formData.append('description', description.trim());
       }
-      formData.append('center_lat', location.lat.toString());
-      formData.append('center_lng', location.lng.toString());
+      formData.append('center_lat', center[1].toString());
+      formData.append('center_lng', center[0].toString());
       formData.append('radius_km', radiusKm.toString());
       if (photo) {
         formData.append('photo', photo);
@@ -197,65 +292,92 @@ export default function CommunityForm({ community, mode }: CommunityFormProps) {
         hint="Optional"
       />
 
-      {/* Location */}
+      {/* Location with map */}
       <div>
         <label className="block text-sm font-medium text-loam mb-2">
           Community location
         </label>
-        {location ? (
-          <div className="flex items-center gap-3 p-4 bg-brand-50 rounded-xl border border-brand-100">
-            <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+
+        {/* Place search */}
+        <div ref={searchContainerRef} className="relative mb-3">
+          <div className="relative">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => searchResults.length > 0 && setShowResults(true)}
+              placeholder="Search for a town or postcode..."
+              className="w-full pl-11 pr-4 py-3 bg-white border-2 border-stone-200 rounded-2xl text-loam placeholder:text-stone-400 focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 transition-all text-sm"
+            />
+            {searching && (
+              <svg className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin w-4 h-4 text-stone-400" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-loam">{locationName || 'Location set'}</p>
-              <p className="text-xs text-weathered">
-                {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleGetLocation}
-              disabled={locating}
-            >
-              Update
-            </Button>
+            )}
           </div>
-        ) : (
+          {showResults && searchResults.length > 0 && (
+            <div className="absolute z-20 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-lg overflow-hidden">
+              {searchResults.map((result, i) => (
+                <button
+                  type="button"
+                  key={i}
+                  onClick={() => handleSelectSearchResult(result)}
+                  className="w-full text-left px-4 py-2.5 text-sm text-loam hover:bg-brand-50 transition-colors border-b border-stone-50 last:border-0"
+                >
+                  <span className="line-clamp-1">{result.display_name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Use my location button if no center set */}
+        {!center && (
           <Button
             type="button"
             variant="outline"
-            onClick={handleGetLocation}
-            disabled={locating}
-            className="w-full"
+            onClick={handleGetBrowserLocation}
+            className="w-full mb-3"
           >
-            {locating ? (
-              <>
-                <svg className="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Getting location...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+            Use my location
+          </Button>
+        )}
+
+        {/* Map with radius */}
+        {center && (
+          <>
+            <div className="relative rounded-2xl overflow-hidden border border-stone-200" style={{ height: 280 }}>
+              <HeatMap
+                ref={mapRef}
+                initialCenter={center}
+                initialZoom={12}
+                pickMode
+                onLocationSelect={handleMapLocationSelect}
+                radiusCircle={{ lng: center[0], lat: center[1], radiusKm }}
+                className="absolute inset-0"
+              />
+            </div>
+            {locationName && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-weathered">
+                <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-                Use my location
-              </>
+                <span className="font-medium text-loam">{locationName}</span>
+                <span className="text-stone-400">&middot;</span>
+                <span>Tap the map to adjust</span>
+              </div>
             )}
-          </Button>
+          </>
         )}
-        <p className="text-xs text-weathered mt-2">
-          This is the center point of your community area
-        </p>
       </div>
 
       {/* Radius */}

@@ -77,15 +77,43 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       ? (members || []).find((m: { user_id: string }) => m.user_id === currentUserId)
       : null;
 
+    // Compute admin list from members
+    const admins = membersWithUsers.filter(
+      (m: { role: string }) => m.role === 'admin'
+    );
+
+    // Determine active members (signed in within the last 30 days)
+    let activeCount = 0;
+    if (memberUserIds.length > 0) {
+      try {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: authUsers } = await serviceClient.auth.admin.listUsers({
+          perPage: 1000,
+        });
+        if (authUsers?.users) {
+          const memberIdSet = new Set(memberUserIds);
+          activeCount = authUsers.users.filter(
+            (u) => memberIdSet.has(u.id) && u.last_sign_in_at && u.last_sign_in_at >= thirtyDaysAgo
+          ).length;
+        }
+      } catch (e) {
+        console.error('Failed to fetch active users:', e);
+        activeCount = 0;
+      }
+    }
+
     return NextResponse.json({
       community: {
         ...community,
         member_count: (members || []).length,
+        admin_count: admins.length,
+        active_count: activeCount,
         is_member: !!userMembership,
         user_role: userMembership?.role || null,
         creator: creator || null,
       },
       members: membersWithUsers,
+      admins,
       picks: picks || [],
     });
   } catch (err) {
@@ -154,20 +182,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Upload new photo if provided
-    if (image) {
-      const fileName = `communities/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-      const buffer = Buffer.from(await image.arrayBuffer());
+    if (image && image.size > 0) {
+      const ext = image.type?.includes('png') ? 'png' : 'jpg';
+      const fileName = `communities/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const arrayBuf = await image.arrayBuffer();
 
       const { data: uploadData, error: uploadError } = await serviceClient.storage
-        .from('community-photos')
-        .upload(fileName, buffer, {
+        .from('photos')
+        .upload(fileName, new Uint8Array(arrayBuf), {
           contentType: image.type || 'image/jpeg',
           upsert: false,
         });
 
       if (!uploadError && uploadData) {
         const { data: publicUrl } = serviceClient.storage
-          .from('community-photos')
+          .from('photos')
           .getPublicUrl(uploadData.path);
         updates.photo_url = publicUrl.publicUrl;
       }

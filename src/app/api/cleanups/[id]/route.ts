@@ -70,7 +70,28 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ cleanup, hotspot: hotspot || null, organiser, volunteers });
+    // Fetch linked community info if set
+    let community = null;
+    if (cleanup.community_id) {
+      const { data: comm } = await supabase
+        .from('communities')
+        .select('id, name, photo_url, area_name, radius_km')
+        .eq('id', cleanup.community_id)
+        .single();
+
+      if (comm) {
+        const { data: memberRows } = await supabase
+          .from('community_members')
+          .select('user_id')
+          .eq('community_id', comm.id);
+        community = {
+          ...comm,
+          member_count: memberRows?.length || 0,
+        };
+      }
+    }
+
+    return NextResponse.json({ cleanup, hotspot: hotspot || null, organiser, volunteers, community });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

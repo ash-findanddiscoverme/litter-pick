@@ -61,7 +61,17 @@ export interface User {
   warned_at: string | null;
   banned_at: string | null;
   created_at: string;
+  show_stats: boolean;
+  show_area: boolean;
+  show_equipment: boolean;
+  show_picks: boolean;
+  show_reports: boolean;
+  show_communities: boolean;
+  area_visible: boolean;
+  profile_slug: string | null;
 }
+
+export type ProfilePanelKey = 'show_stats' | 'show_area' | 'show_equipment' | 'show_picks' | 'show_reports' | 'show_communities';
 
 export interface VolunteerInterest {
   id: string;
@@ -233,6 +243,8 @@ export interface CommunityMember {
 
 export interface CommunityWithMeta extends Community {
   member_count: number;
+  admin_count: number;
+  active_count: number;
   is_member: boolean;
   user_role: CommunityMemberRole | null;
   creator?: {

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     let communities;
 
-    // Use RPC for proximity search if coordinates provided
+    // Use RPC for proximity search if coordinates provided, fall back to regular query
     if (lat && lng) {
       const { data, error } = await serviceClient.rpc('find_nearby_communities', {
         target_lat: parseFloat(lat),
@@ -35,12 +35,13 @@ export async function GET(request: NextRequest) {
       });
 
       if (error) {
-        console.error('Proximity search error:', error);
-        return NextResponse.json({ error: 'Failed to fetch communities' }, { status: 500 });
+        console.error('Proximity search error, falling back:', error);
+      } else {
+        communities = data;
       }
-      communities = data;
-    } else {
-      // Fallback to regular query
+    }
+
+    if (!communities) {
       const { data, error } = await serviceClient
         .from('communities')
         .select('*')
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
     const radius_km = parseFloat(formData.get('radius_km') as string);
     const image = formData.get('photo') as File | null;
 
-    if (!name || !center_lat || !center_lng || !radius_km) {
+    if (!name || isNaN(center_lat) || isNaN(center_lng) || isNaN(radius_km)) {
       return NextResponse.json({ error: 'Name, location, and radius are required' }, { status: 400 });
     }
 
@@ -163,15 +164,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Radius must be between 0.5 and 50 km' }, { status: 400 });
     }
 
-    // Upload photo if provided
+    // Upload photo if provided — use existing 'photos' bucket which already has policies
     let photo_url: string | null = null;
-    if (image) {
-      const fileName = `communities/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-      const buffer = Buffer.from(await image.arrayBuffer());
+    if (image && image.size > 0) {
+      const ext = image.type?.includes('png') ? 'png' : 'jpg';
+      const fileName = `communities/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const arrayBuf = await image.arrayBuffer();
 
       const { data: uploadData, error: uploadError } = await serviceClient.storage
-        .from('community-photos')
-        .upload(fileName, buffer, {
+        .from('photos')
+        .upload(fileName, new Uint8Array(arrayBuf), {
           contentType: image.type || 'image/jpeg',
           upsert: false,
         });
@@ -180,7 +182,7 @@ export async function POST(request: NextRequest) {
         console.error('Upload error:', uploadError);
       } else {
         const { data: publicUrl } = serviceClient.storage
-          .from('community-photos')
+          .from('photos')
           .getPublicUrl(uploadData.path);
         photo_url = publicUrl.publicUrl;
       }

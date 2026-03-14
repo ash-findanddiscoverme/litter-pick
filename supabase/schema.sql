@@ -353,3 +353,13 @@ CREATE POLICY "Anyone can upload community photos"
 CREATE POLICY "Community photos are publicly viewable"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'community-photos');
+
+-- 7. Profile visibility settings
+ALTER TABLE users ADD COLUMN IF NOT EXISTS show_stats       BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS show_area        BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS show_equipment   BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS show_picks       BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS show_reports     BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS show_communities BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS area_visible     BOOLEAN DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_slug     TEXT UNIQUE;

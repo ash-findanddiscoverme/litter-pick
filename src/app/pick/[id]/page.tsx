@@ -257,6 +257,18 @@ export default function CleanupPage() {
   const [equipmentRequests, setEquipmentRequests] = useState<Record<string, number>>({});
   const [myRequests, setMyRequests] = useState<Record<string, boolean>>({});
 
+  // Community link
+  interface PickCommunity {
+    id: string;
+    name: string;
+    photo_url: string | null;
+    area_name: string | null;
+    member_count: number;
+  }
+  const [pickCommunity, setPickCommunity] = useState<PickCommunity | null>(null);
+  const [userAdminCommunities, setUserAdminCommunities] = useState<{ id: string; name: string }[]>([]);
+  const [linkingCommunity, setLinkingCommunity] = useState(false);
+
   // Event confirmation
   const [confirmingEvent, setConfirmingEvent] = useState(false);
   const [eventWentAhead, setEventWentAhead] = useState<boolean | null>(null);
@@ -281,6 +293,7 @@ export default function CleanupPage() {
         setHotspot(data.hotspot || null);
         setOrganiser(data.organiser || null);
         setVolunteers(data.volunteers || []);
+        setPickCommunity(data.community || null);
         if (c) {
           setEquipmentProvision(c.equipment_provision || 'volunteers');
           setEquipmentCounts({
@@ -328,6 +341,17 @@ export default function CleanupPage() {
           if (r.user_id === uid) mine[r.item_type] = true;
         });
         setMyRequests(mine);
+
+        // Fetch communities user is admin of
+        fetch('/api/communities')
+          .then((r) => r.json())
+          .then((d) => {
+            const adminComms = (d.communities || [])
+              .filter((c: { user_role: string | null }) => c.user_role === 'admin')
+              .map((c: { id: string; name: string }) => ({ id: c.id, name: c.name }));
+            setUserAdminCommunities(adminComms);
+          })
+          .catch(() => {});
       }
     });
   }, [id]);
@@ -364,6 +388,39 @@ export default function CleanupPage() {
     }
     metaDesc.setAttribute('content', `Join a litter pick at ${name} (${coords}). Help clear the area, team up with locals, and make your community cleaner.`);
   }, [hotspot, cleanup]);
+
+  const handleLinkCommunity = async (communityId: string) => {
+    setLinkingCommunity(true);
+    try {
+      const res = await fetch(`/api/cleanups/${id}/community`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ community_id: communityId }),
+      });
+      if (res.ok) {
+        // Refresh pick data to get updated community
+        const pickRes = await fetch(`/api/cleanups/${id}`);
+        const pickData = await pickRes.json();
+        setPickCommunity(pickData.community || null);
+        const c = pickData.cleanup;
+        if (c) setCleanup(c);
+      }
+    } catch {
+      // ignore
+    }
+    setLinkingCommunity(false);
+  };
+
+  const handleUnlinkCommunity = async () => {
+    setLinkingCommunity(true);
+    try {
+      const res = await fetch(`/api/cleanups/${id}/community`, { method: 'DELETE' });
+      if (res.ok) setPickCommunity(null);
+    } catch {
+      // ignore
+    }
+    setLinkingCommunity(false);
+  };
 
   const handlePhoto = useCallback(async (file: File) => {
     const compressed = await compressImage(file);
@@ -866,6 +923,68 @@ export default function CleanupPage() {
                       </div>
                     )}
                     <p className="text-sm font-medium text-loam">{organiser.first_name}</p>
+                  </div>
+                </Card>
+              )}
+
+              {/* Community */}
+              {pickCommunity ? (
+                <Card>
+                  <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">Community</h3>
+                  <a href={`/communities/${pickCommunity.id}`} className="flex items-center gap-3 group">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-brand-50 flex-shrink-0">
+                      {pickCommunity.photo_url ? (
+                        <img src={pickCommunity.photo_url} alt={pickCommunity.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <svg className="w-5 h-5 text-brand-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-loam group-hover:text-brand-600 transition-colors truncate">
+                        {pickCommunity.name}
+                      </p>
+                      <p className="text-xs text-weathered">
+                        {pickCommunity.member_count} {pickCommunity.member_count === 1 ? 'member' : 'members'}
+                        {pickCommunity.area_name && ` \u00B7 ${pickCommunity.area_name}`}
+                      </p>
+                    </div>
+                  </a>
+                  {userAdminCommunities.some((c) => c.id === pickCommunity.id) && (
+                    <button
+                      onClick={handleUnlinkCommunity}
+                      disabled={linkingCommunity}
+                      className="mt-3 text-xs text-red-500 hover:text-red-600 transition-colors"
+                    >
+                      {linkingCommunity ? 'Removing...' : 'Remove community link'}
+                    </button>
+                  )}
+                </Card>
+              ) : userAdminCommunities.length > 0 && (
+                <Card>
+                  <h3 className="text-xs font-semibold text-weathered uppercase tracking-wide mb-3">
+                    Link a community
+                  </h3>
+                  <p className="text-sm text-weathered mb-3">
+                    As a community admin, you can link one of your communities to this pick.
+                  </p>
+                  <div className="space-y-2">
+                    {userAdminCommunities.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleLinkCommunity(c.id)}
+                        disabled={linkingCommunity}
+                        className="w-full flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-brand-50 transition-colors text-left"
+                      >
+                        <span className="text-sm font-medium text-loam">{c.name}</span>
+                        <span className="text-xs text-brand-500 font-medium">
+                          {linkingCommunity ? 'Linking...' : 'Link'}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </Card>
               )}

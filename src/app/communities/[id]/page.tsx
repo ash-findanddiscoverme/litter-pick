@@ -29,6 +29,7 @@ export default function CommunityDetailPage() {
 
   const [community, setCommunity] = useState<CommunityWithMeta | null>(null);
   const [members, setMembers] = useState<CommunityMemberWithUser[]>([]);
+  const [admins, setAdmins] = useState<CommunityMemberWithUser[]>([]);
   const [picks, setPicks] = useState<CommunityPick[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +50,7 @@ export default function CommunityDetailPage() {
       const data = await res.json();
       setCommunity(data.community);
       setMembers(data.members || []);
+      setAdmins(data.admins || []);
       setPicks(data.picks || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -253,12 +255,6 @@ export default function CommunityDetailPage() {
                 </svg>
                 {community.radius_km}km area
               </span>
-              <span className="inline-flex items-center gap-1.5 text-sm text-weathered">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                </svg>
-                {community.member_count} {community.member_count === 1 ? 'member' : 'members'}
-              </span>
             </div>
 
             {community.description && (
@@ -286,6 +282,65 @@ export default function CommunityDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Stats bar */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-2xl border border-stone-100 p-4 text-center">
+              <p className="text-2xl font-bold text-loam">{community.member_count}</p>
+              <p className="text-xs text-weathered mt-0.5">
+                {community.member_count === 1 ? 'Member' : 'Members'}
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-stone-100 p-4 text-center">
+              <p className="text-2xl font-bold text-brand-600">{community.admin_count || 0}</p>
+              <p className="text-xs text-weathered mt-0.5">
+                {(community.admin_count || 0) === 1 ? 'Admin' : 'Admins'}
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-stone-100 p-4 text-center">
+              <p className="text-2xl font-bold text-moss-500">{community.active_count || 0}</p>
+              <p className="text-xs text-weathered mt-0.5">Active (30d)</p>
+            </div>
+          </div>
+
+          {/* Admins section */}
+          {admins.length > 0 && (
+            <Card className="mb-6">
+              <h2 className="font-display text-lg font-semibold text-loam mb-3">
+                Admins
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {admins.map((admin) => (
+                  <div
+                    key={admin.user_id}
+                    className="flex items-center gap-2 bg-brand-50 rounded-full pl-1 pr-3 py-1"
+                  >
+                    {admin.user.avatar_url ? (
+                      <img
+                        src={admin.user.avatar_url}
+                        alt={admin.user.first_name}
+                        className="w-7 h-7 rounded-full object-cover ring-2 ring-brand-200"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-brand-200 rounded-full flex items-center justify-center ring-2 ring-brand-100">
+                        <span className="text-xs font-bold text-brand-700">
+                          {admin.user.first_name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-sm font-medium text-loam">
+                      {admin.user.first_name}
+                    </span>
+                    {admin.user_id === community.creator_id && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        Creator
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {/* Action buttons */}
           <div className="flex gap-3 mb-8">

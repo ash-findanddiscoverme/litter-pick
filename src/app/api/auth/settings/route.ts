@@ -3,7 +3,9 @@ import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supab
 
 export const runtime = 'edge';
 
-/** PATCH /api/auth/settings — update volunteer type */
+const PANEL_KEYS = ['show_stats', 'show_area', 'show_equipment', 'show_picks', 'show_reports', 'show_communities'] as const;
+
+/** PATCH /api/auth/settings — update user settings */
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();
@@ -15,19 +17,58 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { volunteer_type } = body;
+    const updates: Record<string, unknown> = {};
 
-    if (!volunteer_type || !['solo', 'group', 'organise'].includes(volunteer_type)) {
-      return NextResponse.json({ error: 'Invalid volunteer type' }, { status: 400 });
+    // Volunteer type
+    if (body.volunteer_type) {
+      if (!['solo', 'group', 'organise'].includes(body.volunteer_type)) {
+        return NextResponse.json({ error: 'Invalid volunteer type' }, { status: 400 });
+      }
+      updates.volunteer_type = body.volunteer_type;
+    }
+
+    // Panel visibility toggles
+    for (const key of PANEL_KEYS) {
+      if (typeof body[key] === 'boolean') {
+        updates[key] = body[key];
+      }
+    }
+
+    // Volunteer area privacy
+    if (typeof body.area_visible === 'boolean') {
+      updates.area_visible = body.area_visible;
+    }
+
+    // Profile slug
+    if (typeof body.profile_slug === 'string') {
+      const slug = body.profile_slug.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+      if (slug.length < 3 || slug.length > 40) {
+        return NextResponse.json({ error: 'Profile URL must be 3-40 characters (letters, numbers, hyphens)' }, { status: 400 });
+      }
+      // Check uniqueness
+      const { data: existing } = await serviceClient
+        .from('users')
+        .select('id')
+        .eq('profile_slug', slug)
+        .neq('id', user.id)
+        .maybeSingle();
+      if (existing) {
+        return NextResponse.json({ error: 'That profile URL is already taken' }, { status: 409 });
+      }
+      updates.profile_slug = slug;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
     }
 
     const { error } = await serviceClient
       .from('users')
-      .update({ volunteer_type })
+      .update(updates)
       .eq('id', user.id);
 
     if (error) {
-      console.error('Update volunteer type error:', error);
+      console.error('Settings update error:', error);
       return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
     }
 

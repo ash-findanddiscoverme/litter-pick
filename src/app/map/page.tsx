@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import HeatMap from '@/components/map/HeatMap';
 import type { HeatMapHandle } from '@/components/map/HeatMap';
-import HotspotCard from '@/components/hotspot/HotspotCard';
-import Button from '@/components/ui/Button';
 import type { Hotspot } from '@/types/database';
 import { getStoredLocation, requestUserLocation } from '@/lib/location';
 
@@ -18,8 +16,6 @@ interface SearchResult {
 
 export default function MapPage() {
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showList, setShowList] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -101,9 +97,8 @@ export default function MapPage() {
       .then((r) => r.json())
       .then((data) => {
         setHotspots(data.hotspots || []);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {});
   }, []);
 
   const handleHotspotClick = (hotspot: Hotspot) => {
@@ -197,30 +192,14 @@ export default function MapPage() {
                 Report litter
               </button>
             </a>
-            <button
-              onClick={() => setShowList(!showList)}
-              className="w-full bg-white shadow-lg rounded-xl px-6 py-3 text-base font-semibold text-loam hover:bg-stone-50 transition-colors"
-            >
-              {showList ? 'Hide list' : `${hotspots.length} hotspots`}
-            </button>
+            <a href="/hotspots" className="block">
+              <button className="w-full bg-white shadow-lg rounded-xl px-6 py-3 text-base font-semibold text-loam hover:bg-stone-50 transition-colors">
+                View hotspots
+              </button>
+            </a>
           </div>
         </div>
 
-        {/* Hotspot list panel */}
-        {showList && (
-          <div className="bg-white border-t border-stone-100 max-h-[40vh] overflow-y-auto p-4 space-y-3">
-            {loading ? (
-              <p className="text-sm text-weathered text-center py-4">Loading hotspots...</p>
-            ) : hotspots.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-weathered">No reports in this area yet.</p>
-                <p className="text-xs text-stone-300 mt-1">Spot something? Be the first to report.</p>
-              </div>
-            ) : (
-              hotspots.map((h) => <HotspotCard key={h.id} hotspot={h} />)
-            )}
-          </div>
-        )}
       </main>
     </>
   );
