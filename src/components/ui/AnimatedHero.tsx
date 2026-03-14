@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils';
 import { 
   motion, 
   useMotionValue, 
-  useTransform, 
   useMotionTemplate, 
   useAnimationFrame,
   AnimatePresence,
@@ -23,10 +22,10 @@ interface Hotspot {
 const generateHotspots = (count: number): Hotspot[] => {
   return Array.from({ length: count }, (_, i) => ({
     id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
+    x: 5 + Math.random() * 90,
+    y: 5 + Math.random() * 90,
     size: ['sm', 'md', 'lg'][Math.floor(Math.random() * 3)] as 'sm' | 'md' | 'lg',
-    delay: Math.random() * 3,
+    delay: Math.random() * 2,
   }));
 };
 
@@ -163,53 +162,51 @@ export default function AnimatedHero() {
     <section
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className="relative w-full min-h-[85vh] md:min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-stone-50"
+      className="relative w-full min-h-[100svh] md:min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-stone-50"
     >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-brand-50 via-stone-50 to-moss-50" />
       
-      {/* Subtle static grid */}
-      <div className="absolute inset-0 z-0 opacity-[0.08]">
+      {/* Subtle static grid - hidden on mobile for performance */}
+      <div className="absolute inset-0 z-0 opacity-[0.06] hidden sm:block">
         <MapGridPattern offsetX={gridOffsetX} offsetY={gridOffsetY} />
       </div>
       
-      {/* Interactive spotlight grid */}
+      {/* Interactive spotlight grid - desktop only */}
       <motion.div 
-        className="absolute inset-0 z-0 opacity-50 hidden md:block"
+        className="absolute inset-0 z-0 opacity-40 hidden lg:block"
         style={{ maskImage, WebkitMaskImage: maskImage }}
       >
         <MapGridPattern offsetX={gridOffsetX} offsetY={gridOffsetY} />
       </motion.div>
 
-      {/* Animated hotspot markers */}
+      {/* Animated hotspot markers - fewer on mobile */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <AnimatePresence>
-          {isVisible && hotspots.map((hotspot) => (
+          {isVisible && hotspots.slice(0, typeof window !== 'undefined' && window.innerWidth < 768 ? 8 : 15).map((hotspot) => (
             <HotspotDot key={hotspot.id} hotspot={hotspot} />
           ))}
         </AnimatePresence>
       </div>
 
-      {/* Ambient blobs */}
-      <div className="absolute inset-0 pointer-events-none z-0">
+      {/* Ambient blobs - contained within viewport */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <motion.div 
-          className="absolute right-[-10%] top-[-10%] w-[50%] h-[50%] rounded-full bg-brand-400/20 blur-[120px]"
+          className="absolute right-0 top-0 w-[60%] md:w-[40%] h-[40%] rounded-full bg-brand-400/15 blur-[80px] md:blur-[120px]"
           animate={{ 
             scale: [1, 1.1, 1],
-            x: [0, 20, 0],
           }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div 
-          className="absolute left-[-15%] bottom-[-20%] w-[45%] h-[45%] rounded-full bg-moss-400/15 blur-[100px]"
+          className="absolute left-0 bottom-0 w-[50%] md:w-[35%] h-[35%] rounded-full bg-moss-400/10 blur-[60px] md:blur-[100px]"
           animate={{ 
             scale: [1, 1.15, 1],
-            y: [0, -30, 0],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div 
-          className="absolute right-[20%] bottom-[10%] w-[25%] h-[25%] rounded-full bg-sunlight-300/20 blur-[80px]"
+          className="absolute right-[10%] bottom-[20%] w-[30%] md:w-[20%] h-[20%] rounded-full bg-sunlight-300/15 blur-[50px] md:blur-[80px] hidden sm:block"
           animate={{ 
             scale: [1, 1.2, 1],
           }}
@@ -218,15 +215,15 @@ export default function AnimatedHero() {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-4xl mx-auto">
+      <div className="relative z-10 flex flex-col items-center text-center px-5 sm:px-6 max-w-4xl mx-auto pt-16 pb-24 sm:pt-0 sm:pb-0">
         {/* Animated badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-6"
+          className="mb-4 sm:mb-6"
         >
-          <span className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-brand-600 rounded-full px-5 py-2.5 text-sm font-medium border border-brand-100 shadow-soft">
+          <span className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm text-brand-600 rounded-full px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-medium border border-brand-100 shadow-soft">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500" />
@@ -240,13 +237,13 @@ export default function AnimatedHero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
-          className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-loam tracking-tight leading-[1.05]"
+          className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-loam tracking-tight leading-[1.1]"
         >
           Care for your{' '}
-          <span className="text-brand-500 relative">
+          <span className="text-brand-500 relative inline-block">
             corner
             <motion.span
-              className="absolute -bottom-1 left-0 right-0 h-1 bg-brand-400 rounded-full"
+              className="absolute -bottom-0.5 sm:-bottom-1 left-0 right-0 h-0.5 sm:h-1 bg-brand-400 rounded-full"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 0.6, delay: 1 }}
@@ -261,7 +258,7 @@ export default function AnimatedHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="text-lg md:text-xl lg:text-2xl text-weathered mt-6 max-w-2xl leading-relaxed"
+          className="text-base sm:text-lg md:text-xl text-weathered mt-4 sm:mt-6 max-w-xl sm:max-w-2xl leading-relaxed px-2"
         >
           Report rubbish, find local hotspots, and join picks near you. 
           A simpler way to look after where you live.
@@ -272,39 +269,39 @@ export default function AnimatedHero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="flex flex-col sm:flex-row gap-4 mt-10"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8 sm:mt-10 w-full sm:w-auto"
         >
-          <a href="/report">
-            <Button size="lg" className="shadow-soft-lg min-w-[180px]">
+          <a href="/report" className="w-full sm:w-auto">
+            <Button size="lg" className="shadow-soft-lg w-full sm:min-w-[180px]">
               Report litter
             </Button>
           </a>
-          <a href="/picks">
-            <Button size="lg" variant="outline" className="min-w-[180px]">
+          <a href="/picks" className="w-full sm:w-auto">
+            <Button size="lg" variant="outline" className="w-full sm:min-w-[180px]">
               I want to help
             </Button>
           </a>
         </motion.div>
-        
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.6 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        >
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-            className="flex flex-col items-center gap-2 text-stone-400"
-          >
-            <span className="text-xs font-medium tracking-wide uppercase">Scroll</span>
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
-            </svg>
-          </motion.div>
-        </motion.div>
       </div>
+      
+      {/* Scroll indicator - hidden on mobile */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 0.6 }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden sm:block"
+      >
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+          className="flex flex-col items-center gap-2 text-stone-400"
+        >
+          <span className="text-xs font-medium tracking-wide uppercase">Scroll</span>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+          </svg>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

@@ -43,10 +43,43 @@ export default function Footer() {
       </div>
 
       <footer className="bg-stone-50 border-t border-stone-100 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
+        <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8 md:py-10">
+          {/* Mobile: Simplified layout */}
+          <div className="flex flex-col gap-6 sm:hidden">
             {/* Brand */}
-            <div className="md:col-span-2">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center shadow-sm">
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+              </div>
+              <span className="text-base font-display font-semibold text-loam">Litter Pick</span>
+            </Link>
+            
+            {/* Links - horizontal on mobile */}
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {[...footerLinks.main, ...footerLinks.legal].map((link) => (
+                <Link 
+                  key={link.href}
+                  href={link.href} 
+                  className="text-sm text-weathered hover:text-brand-600 transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+            
+            {/* Copyright */}
+            <p className="text-xs text-stone-400">
+              &copy; {new Date().getFullYear()} Litter Pick
+            </p>
+          </div>
+
+          {/* Desktop: Full layout */}
+          <div className="hidden sm:grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
+            {/* Brand */}
+            <div className="col-span-2">
               <Link href="/" className="flex items-center gap-2.5 group">
                 <div className="w-9 h-9 bg-brand-500 rounded-xl flex items-center justify-center shadow-sm">
                   <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -56,15 +89,15 @@ export default function Footer() {
                 </div>
                 <span className="text-lg font-display font-semibold text-loam">Litter Pick</span>
               </Link>
-              <p className="mt-4 text-sm text-weathered max-w-xs leading-relaxed">
+              <p className="mt-3 text-sm text-weathered max-w-xs leading-relaxed">
                 A community-driven platform helping people report litter, organise cleanups, and care for their local areas.
               </p>
             </div>
 
             {/* Links */}
             <div>
-              <h4 className="font-display font-semibold text-loam mb-4">Explore</h4>
-              <ul className="space-y-2.5">
+              <h4 className="font-display font-semibold text-loam mb-3 text-sm">Explore</h4>
+              <ul className="space-y-2">
                 {footerLinks.main.map((link) => (
                   <li key={link.href}>
                     <Link 
@@ -79,8 +112,8 @@ export default function Footer() {
             </div>
 
             <div>
-              <h4 className="font-display font-semibold text-loam mb-4">Legal</h4>
-              <ul className="space-y-2.5">
+              <h4 className="font-display font-semibold text-loam mb-3 text-sm">Legal</h4>
+              <ul className="space-y-2">
                 {footerLinks.legal.map((link) => (
                   <li key={link.href}>
                     <Link 
@@ -95,17 +128,15 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Bottom bar */}
-          <div className="mt-10 pt-6 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Bottom bar - desktop only */}
+          <div className="hidden sm:flex mt-8 pt-5 border-t border-stone-200 items-center justify-between">
             <p className="text-sm text-stone-400">
               &copy; {new Date().getFullYear()} Litter Pick. Made with care for the environment.
             </p>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-600 text-xs font-medium rounded-full">
-                <span className="w-2 h-2 rounded-full bg-brand-500 animate-gentle-pulse" />
-                Active across the UK
-              </span>
-            </div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 text-brand-600 text-xs font-medium rounded-full">
+              <span className="w-2 h-2 rounded-full bg-brand-500 animate-gentle-pulse" />
+              Active across the UK
+            </span>
           </div>
         </div>
       </footer>
