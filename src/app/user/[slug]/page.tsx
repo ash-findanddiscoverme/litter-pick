@@ -275,7 +275,7 @@ export default function PublicProfilePage() {
                           <p className="text-sm font-medium text-loam truncate">{c.name}</p>
                           {c.area_name && <span className="text-xs text-weathered">{c.area_name}</span>}
                         </div>
-                        <Badge variant={c.role === 'admin' ? 'success' : 'secondary'} className="text-[10px]">
+                        <Badge variant={c.role === 'admin' ? 'success' : 'default'} className="text-[10px]">
                           {c.role === 'admin' ? 'Admin' : 'Member'}
                         </Badge>
                       </div>

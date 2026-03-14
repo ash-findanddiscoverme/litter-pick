@@ -403,7 +403,7 @@ export default function ProfilePage() {
                             <p className="text-sm font-medium text-loam truncate">{c.name}</p>
                             <div className="flex items-center gap-2">
                               {c.area_name && <span className="text-xs text-weathered">{c.area_name}</span>}
-                              <Badge variant={c.role === 'admin' ? 'success' : 'secondary'} className="text-[10px]">
+                              <Badge variant={c.role === 'admin' ? 'success' : 'default'} className="text-[10px]">
                                 {c.role === 'admin' ? 'Admin' : 'Member'}
                               </Badge>
                             </div>
