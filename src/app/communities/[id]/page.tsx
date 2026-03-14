@@ -332,7 +332,7 @@ export default function CommunityDetailPage() {
                       {admin.user.first_name}
                     </span>
                     {admin.user_id === community.creator_id && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      <Badge variant="default" className="text-[10px] px-1.5 py-0">
                         Creator
                       </Badge>
                     )}
