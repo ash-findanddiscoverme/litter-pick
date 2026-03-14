@@ -257,3 +257,99 @@ CREATE POLICY "Anyone can upload photos"
 CREATE POLICY "Photos are publicly viewable"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'photos');
+
+
+-- --------------------------------------------------------
+-- 6. COMMUNITIES
+-- --------------------------------------------------------
+
+-- 6a. communities — location-based groups
+CREATE TABLE IF NOT EXISTS communities (
+  id              UUID           DEFAULT gen_random_uuid() PRIMARY KEY,
+  name            TEXT           NOT NULL,
+  description     TEXT,
+  photo_url       TEXT,
+  creator_id      UUID           NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  center_lat      DOUBLE PRECISION NOT NULL,
+  center_lng      DOUBLE PRECISION NOT NULL,
+  radius_km       DOUBLE PRECISION NOT NULL DEFAULT 5,
+  area_name       TEXT,
+  created_at      TIMESTAMPTZ    DEFAULT now(),
+  -- Computed PostGIS geography column for spatial queries
+  location        GEOGRAPHY(POINT, 4326)
+                   GENERATED ALWAYS AS (
+                     ST_SetSRID(ST_MakePoint(center_lng, center_lat), 4326)::geography
+                   ) STORED
+);
+
+-- 6b. community_members — join table with role
+CREATE TABLE IF NOT EXISTS community_members (
+  community_id    UUID           NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+  user_id         UUID           NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role            TEXT           NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+  joined_at       TIMESTAMPTZ    DEFAULT now(),
+  PRIMARY KEY (community_id, user_id)
+);
+
+-- 6c. Link picks (cleanups) to communities
+ALTER TABLE cleanups ADD COLUMN IF NOT EXISTS community_id UUID REFERENCES communities(id) ON DELETE SET NULL;
+
+-- Spatial index for community proximity queries
+CREATE INDEX IF NOT EXISTS idx_communities_location ON communities USING GIST (location);
+CREATE INDEX IF NOT EXISTS idx_community_members_user ON community_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_community_members_community ON community_members(community_id);
+CREATE INDEX IF NOT EXISTS idx_cleanups_community ON cleanups(community_id);
+
+-- RPC function to find nearby communities
+CREATE OR REPLACE FUNCTION find_nearby_communities(
+  target_lat  DOUBLE PRECISION,
+  target_lng  DOUBLE PRECISION,
+  radius_km   DOUBLE PRECISION DEFAULT 50
+)
+RETURNS SETOF communities
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT *
+  FROM   communities
+  WHERE  ST_DWithin(
+           location,
+           ST_SetSRID(ST_MakePoint(target_lng, target_lat), 4326)::geography,
+           radius_km * 1000
+         )
+  ORDER BY ST_Distance(
+           location,
+           ST_SetSRID(ST_MakePoint(target_lng, target_lat), 4326)::geography
+         );
+$$;
+
+-- RLS for communities
+ALTER TABLE communities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
+
+-- communities — public read
+CREATE POLICY "Communities are viewable by everyone"
+  ON communities FOR SELECT USING (true);
+-- service-role key handles INSERT/UPDATE/DELETE
+
+-- community_members — public read (to show member counts), authenticated insert/delete own
+CREATE POLICY "Community members are viewable by everyone"
+  ON community_members FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can join communities"
+  ON community_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can leave communities"
+  ON community_members FOR DELETE USING (auth.uid() = user_id);
+-- service-role key handles role updates and admin removals
+
+-- Storage bucket for community photos
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('community-photos', 'community-photos', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Anyone can upload community photos"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'community-photos');
+
+CREATE POLICY "Community photos are publicly viewable"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'community-photos');

@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/report', label: 'Report' },
   { href: '/map', label: 'Map' },
   { href: '/picks', label: 'Pick' },
+  { href: '/communities', label: 'Communities' },
   { href: '/guides', label: 'Guides' },
 ];
 

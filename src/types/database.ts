@@ -207,3 +207,54 @@ export interface Feedback {
   reviewed_at: string | null;
   admin_notes: string | null;
 }
+
+// Community types
+export type CommunityMemberRole = 'admin' | 'member';
+
+export interface Community {
+  id: string;
+  name: string;
+  description: string | null;
+  photo_url: string | null;
+  creator_id: string;
+  center_lat: number;
+  center_lng: number;
+  radius_km: number;
+  area_name: string | null;
+  created_at: string;
+}
+
+export interface CommunityMember {
+  community_id: string;
+  user_id: string;
+  role: CommunityMemberRole;
+  joined_at: string;
+}
+
+export interface CommunityWithMeta extends Community {
+  member_count: number;
+  is_member: boolean;
+  user_role: CommunityMemberRole | null;
+  creator?: {
+    id: string;
+    first_name: string;
+    avatar_url: string | null;
+  };
+}
+
+export interface CommunityMemberWithUser extends CommunityMember {
+  user: {
+    id: string;
+    first_name: string;
+    avatar_url: string | null;
+  };
+}
+
+export interface CommunityInput {
+  name: string;
+  description?: string;
+  photo?: File | null;
+  center_lat: number;
+  center_lng: number;
+  radius_km: number;
+}
