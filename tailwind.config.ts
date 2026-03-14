@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        /* Palette A — "Hedgerow & Chalk" */
+        /* Palette — "Hedgerow & Chalk" (refined) */
         brand: {
           50:  '#EEF7EF',   /* Palest green tint */
           100: '#D5ECD7',   /* Light green wash */
@@ -38,14 +38,69 @@ const config: Config = {
           300: '#B8A98F',   /* Warm Stone – secondary */
           400: '#9A8E78',   /* Mid stone */
         },
+        /* New nature-inspired accents */
+        sky: {
+          50:  '#EBF6F8',
+          100: '#D0EBF0',
+          200: '#A8D9E3',
+          300: '#7BBFCF',   /* Fresh outdoorsy blue */
+          400: '#5AA8BC',
+          500: '#3D8FA6',
+        },
+        sunlight: {
+          50:  '#FEF9EC',
+          100: '#FCF0D0',
+          200: '#F9E4A8',
+          300: '#F5C864',   /* Warm optimistic yellow */
+          400: '#E8B23D',
+          500: '#D49A1F',
+        },
+        bark: {
+          50:  '#F5F0ED',
+          100: '#E8DED7',
+          200: '#D1BFB2',
+          300: '#A98F7C',
+          400: '#6B5344',   /* Rich brown for grounding */
+          500: '#4D3B30',
+        },
+        moss: {
+          50:  '#F2F5EF',
+          100: '#E2E9DB',
+          200: '#C8D6BA',
+          300: '#A8C094',
+          400: '#8BA872',   /* Softer green variant */
+          500: '#6E8F55',
+        },
       },
       textColor: {
         loam:      '#2C2C2A',   /* Dark Loam – primary text */
         weathered: '#6B6B65',   /* Weathered – secondary text */
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        serif: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['var(--font-fraunces)', 'Georgia', 'serif'],
+      },
+      borderRadius: {
+        '4xl': '2rem',
+      },
+      boxShadow: {
+        'soft': '0 2px 8px -2px rgba(44, 44, 42, 0.08), 0 4px 16px -4px rgba(44, 44, 42, 0.12)',
+        'soft-lg': '0 4px 12px -2px rgba(44, 44, 42, 0.1), 0 8px 24px -4px rgba(44, 44, 42, 0.15)',
+        'glow-brand': '0 0 20px rgba(74, 168, 83, 0.25)',
+      },
+      animation: {
+        'float': 'float 4s ease-in-out infinite',
+        'fade-up': 'fadeUp 0.6s ease-out forwards',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-8px)' },
+        },
+        fadeUp: {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
     },
   },

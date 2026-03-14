@@ -47,38 +47,45 @@ export default function GuidesPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 pt-16">
+      <main className="flex-1 pt-16 md:pt-[72px]">
         {/* Hero */}
-        <div className="bg-gradient-to-br from-brand-50 via-white to-emerald-50 border-b border-stone-100">
-          <div className="max-w-2xl mx-auto px-4 py-14 text-center">
-            <h1 className="text-3xl font-bold text-loam">Guides</h1>
-            <p className="text-weathered mt-3 max-w-md mx-auto leading-relaxed">
+        <div className="relative overflow-hidden bg-gradient-to-br from-brand-50 via-white to-moss-50 border-b border-stone-100">
+          <div className="max-w-2xl mx-auto px-4 py-16 md:py-20 text-center relative z-10">
+            <span className="inline-block px-4 py-1.5 bg-brand-100 text-brand-600 text-sm font-medium rounded-full mb-4">
+              Learn
+            </span>
+            <h1 className="font-display text-3xl md:text-4xl font-bold text-loam">
+              Guides
+            </h1>
+            <p className="text-weathered mt-4 max-w-md mx-auto leading-relaxed text-lg">
               Practical advice for litter picking, organising community events, and understanding the problem.
             </p>
           </div>
+          <div className="absolute -top-16 -right-16 w-48 h-48 bg-brand-200/30 rounded-full blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 w-64 h-64 bg-moss-200/20 rounded-full blur-3xl" />
         </div>
 
         {/* Guide cards */}
-        <div className="max-w-2xl mx-auto px-4 py-10">
-          <div className="grid sm:grid-cols-2 gap-4">
+        <div className="max-w-2xl mx-auto px-4 py-12 md:py-16">
+          <div className="grid sm:grid-cols-2 gap-5">
             {guides.map((guide) => (
               <Link
                 key={guide.slug}
                 href={`/guides/${guide.slug}`}
-                className="group block rounded-2xl border border-stone-100 bg-white p-5 hover:border-brand-200 hover:shadow-sm transition-all"
+                className="group block rounded-3xl border border-stone-100 bg-white p-6 hover:border-brand-200 hover:shadow-soft transition-all duration-300 hover:-translate-y-1"
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${guide.colour} mb-4`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${guide.colour} mb-5`}>
                   {guide.icon}
                 </div>
-                <h2 className="text-base font-semibold text-loam group-hover:text-brand-600 transition-colors">
+                <h2 className="font-display text-lg font-semibold text-loam group-hover:text-brand-600 transition-colors">
                   {guide.title}
                 </h2>
-                <p className="text-sm text-weathered mt-1.5 leading-relaxed">
+                <p className="text-sm text-weathered mt-2 leading-relaxed">
                   {guide.description}
                 </p>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-500 mt-3">
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-500 mt-4">
                   Read guide
-                  <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                 </span>

@@ -15,6 +15,10 @@
     color: #2C2C2A;
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
+  
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
 }
 
 @layer utilities {
@@ -27,16 +31,113 @@
   }
 }
 
+@layer components {
+  /* Card hover lift effect */
+  .card-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+  .card-lift:hover {
+    @apply -translate-y-1 shadow-soft-lg;
+  }
+  
+  /* Button press effect */
+  .btn-press {
+    @apply transition-transform duration-100;
+  }
+  .btn-press:active {
+    @apply scale-[0.98];
+  }
+  
+  /* Fade up animation for scroll reveals */
+  .fade-up {
+    @apply opacity-0 translate-y-4;
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  .fade-up.visible {
+    @apply opacity-100 translate-y-0;
+  }
+  
+  /* Organic blob decoration */
+  .blob-decoration {
+    @apply absolute rounded-full blur-3xl opacity-20 pointer-events-none;
+  }
+  
+  /* Subtle grain texture overlay */
+  .texture-grain {
+    position: relative;
+  }
+  .texture-grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+  
+  /* Glass morphism panel */
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-md border border-white/50 shadow-soft;
+  }
+}
+
 /* Pulsing glow for the Report litter button */
 @keyframes glow {
   0%, 100% {
     box-shadow: 0 0 8px rgba(74, 168, 83, 0.4), 0 4px 12px rgba(74, 168, 83, 0.2);
   }
   50% {
-    box-shadow: 0 0 20px rgba(74, 168, 83, 0.6), 0 4px 24px rgba(74, 168, 83, 0.35);
+    box-shadow: 0 0 24px rgba(74, 168, 83, 0.5), 0 4px 28px rgba(74, 168, 83, 0.3);
   }
 }
 
 .animate-glow {
-  animation: glow 2s ease-in-out infinite;
+  animation: glow 2.5s ease-in-out infinite;
+}
+
+/* Gentle pulse for badges */
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+/* Slide up animation for modals/panels */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+/* Slide down for mobile menu */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s ease-out forwards;
 }
