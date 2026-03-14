@@ -2,6 +2,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Button from '@/components/ui/Button';
 import WaveDivider, { BlobDecoration } from '@/components/ui/WaveDivider';
+import AnimatedHero from '@/components/ui/AnimatedHero';
 
 const stats = [
   { value: '2,400+', label: 'Reports logged' },
@@ -53,52 +54,9 @@ export default function LandingPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 pt-16 md:pt-[72px]">
-        {/* Hero */}
-        <section className="relative overflow-hidden">
-          {/* Hero image with overlaid heading */}
-          <div className="relative w-full">
-            <img
-              src="/hero.webp"
-              srcSet="/hero-480w.webp 480w, /hero-768w.webp 768w, /hero-1024w.webp 1024w, /hero.webp 1920w"
-              sizes="100vw"
-              alt="British countryside at golden hour"
-              width={1920}
-              height={1279}
-              fetchPriority="high"
-              decoding="async"
-              className="w-full h-72 sm:h-96 md:h-[32rem] lg:h-[36rem] object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
-            <div className="absolute inset-0 flex flex-col justify-end max-w-6xl mx-auto px-4 pb-10 md:pb-16">
-              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md text-white rounded-full px-4 py-2 text-sm font-medium mb-5 w-fit border border-white/20">
-                <span className="w-2 h-2 rounded-full bg-brand-400 animate-gentle-pulse" />
-                Active across the UK
-              </div>
-              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-[1.1]">
-                Care for your{' '}
-                <span className="text-brand-300">corner.</span>
-              </h1>
-              <p className="text-lg md:text-xl text-white/80 mt-4 max-w-xl leading-relaxed">
-                Report rubbish, find local hotspots, and join picks near you. 
-                A simpler way to look after where you live.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 mt-8">
-                <a href="/report">
-                  <Button size="lg" className="shadow-soft-lg">Report litter</Button>
-                </a>
-                <a href="/picks">
-                  <Button size="lg" variant="outline" className="bg-white/10 border-white text-white hover:bg-white/20 hover:border-white">
-                    I want to help
-                  </Button>
-                </a>
-              </div>
-            </div>
-          </div>
-          
-          {/* Decorative gradient transition */}
-          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-stone-50 to-transparent" />
-        </section>
+      <main className="flex-1">
+        {/* Animated Hero */}
+        <AnimatedHero />
 
         {/* Social proof stats */}
         <section className="relative bg-stone-50 py-12 md:py-16">
